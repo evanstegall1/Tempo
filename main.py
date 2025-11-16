@@ -7,7 +7,7 @@ from typing import List, Tuple, Dict, Set, Optional
 
 from bpm_lookup import bpm_from_isrc
 
-SCOPES = "playlist-modify-public playlist-modify-private"
+SCOPES = "playlist-modify-public playlist-modify-private user-read-private"
 
 load_dotenv()
 client_id = os.getenv("CLIENT_ID")
@@ -183,6 +183,14 @@ def collect_candidates(
         random.shuffle(pool)
     return pool
 
+def get_sure_id(sp: spotipy.Spotify)-> str:
+    try:
+        user_profile=sp.current_user()
+        return user_profile["id"]
+    except Exception as e:
+        printf(f"Error fetching user profile:{e}")
+        raise e
+
 def build_bpm_playlist(
     user_id: str,
     name: str,
@@ -203,6 +211,12 @@ def build_bpm_playlist(
     fallback_threshold: int = 15
 ) -> dict:
     sp = get_sp()
+
+    if user_id.lower() == "me":
+        try:
+            user_id = get_user_id(sp)
+        except Exception:
+            return {"error": "Could not retrieve Spotify user ID."}
 
     candidates = collect_candidates(
         sp,
