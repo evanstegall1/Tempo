@@ -14,7 +14,7 @@ const TestInputExample = ()=>{
   const [selectedMaxBPM, setSelectedMaxBPM]=React.useState('200');
   const [isLoading, setIsLoading]=React.useState(false);
 
-  const USER_ID= "Bellabopz";
+  const USER_ID= "stegallej";
 
   const handleCreatePlaylist = async ()=>{
     const minBPM= parseFloat(selectedMinBPM);

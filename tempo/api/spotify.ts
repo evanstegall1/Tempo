@@ -1,7 +1,7 @@
 import{BuildPlaylistRequest, BuildPlaylistResponse} from './types';
 
 const FLASK_API_BASE_URL='https://practiceusernameforjosh.pythonanywhere.com';
-const TIMEOUT_MS = 120000;
+const TIMEOUT_MS = 300000;
 
 export async function callBuildPlaylist(
     requestBody: BuildPlaylistRequest,
