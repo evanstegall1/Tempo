@@ -1,11 +1,16 @@
 import{BuildPlaylistRequest, BuildPlaylistResponse} from './types';
 
-const FLASK_API_BASE_URL='76.72.29.135';
+const FLASK_API_BASE_URL='https://practiceusernameforjosh.pythonanywhere.com';
+const TIMEOUT_MS = 120000;
 
 export async function callBuildPlaylist(
     requestBody: BuildPlaylistRequest,
 ): Promise<BuildPlaylistResponse>{
     const url=`${FLASK_API_BASE_URL}/build_playlist`;
+
+    const controller  =  new AbortController();
+    const timeoutId= setTimeout(()=> controller.abort(), TIMEOUT_MS);
+
     try{
         const response= await fetch(url, {
             method:'POST', 
@@ -13,8 +18,9 @@ export async function callBuildPlaylist(
                 'Content-Type': 'application/json',
             },
             body:JSON.stringify(requestBody),
-            signal: AbortSignal.timeout(30000),
+            signal:controller.signal,
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok){
             const errorText= await response.text();
@@ -25,6 +31,8 @@ export async function callBuildPlaylist(
         return data;
 
     } catch (error){
+        clearTimeout(timeoutId);
+        
         console.error("Error building playlist: ", error);
         throw error;
     }

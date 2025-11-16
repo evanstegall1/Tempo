@@ -1,63 +1,100 @@
 import { Link, router  } from 'expo-router';
-import { StyleSheet, TextInput, Button, Alert } from 'react-native';
+import { StyleSheet, TextInput, Button, Alert, ActivityIndicator } from 'react-native';
 import React from 'react';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import {Picker} from '@react-native-picker/picker'
 import {usePlaylists} from '@/context/playlistsContext'
+import {callBuildPlaylist} from '../api/spotify';
+import {BuildPlaylistRequest} from '../api/types'
 const TestInputExample = ()=>{
   const {addPlaylist} = usePlaylists();
   const [text, onChangeText] = React.useState('new playlist');
   const [selectedMinBPM, setSelectedMinBPM]=React.useState('70');
   const [selectedMaxBPM, setSelectedMaxBPM]=React.useState('200');
-  
-  const handleCreatePlaylist = ()=>{
-    addPlaylist(text, selectedMinBPM, selectedMaxBPM);
-    Alert.alert('Playlist Created', `"${text}" has been added!`);
+  const [isLoading, setIsLoading]=React.useState(false);
+
+  const USER_ID= "Bellabopz";
+
+  const handleCreatePlaylist = async ()=>{
+    const minBPM= parseFloat(selectedMinBPM);
+    const maxBPM= parseFloat(selectedMaxBPM);
+
+  if (minBPM>=maxBPM){
+    Alert.alert("Input Error", "Minimum BPM must be less than Maximum BPM.");
+    return;
+  }
+
+  const requestBody: BuildPlaylistRequest={
+    user_id: USER_ID,
+    name:text.trim()||'BPM Playlist',
+    queries:["genre:rock", "genre:house", "workout music"], //examples for now
+    min_bpm:minBPM,
+    max_bpm:maxBPM,
+    description: `BPM: ${minBPM}-${maxBPM}.`,
+    public:false,
+  };
+  setIsLoading(true);
+
+  try{
+    const summary = await callBuildPlaylist(requestBody);
+
+    addPlaylist(requestBody.name, summary.min_bpm.toString(), summary.max_bpm.toString());
+
+    Alert.alert(
+      'Playlist Built!', 
+      `"${summary.queries.join(',')}" tracks filtered. Added ${summary.added_count} tracks to playlist ID: ${summary.playlist_id}.`
+    );
+
     router.back();
+  }catch(error){
+    console.error("API Call Failed:", error);
+    Alert.alert(
+      'Build failed',
+      `Could not build spotify playlist. is flask server running? Error: ${(error as Error).message}`
+    );
+  }finally {
+    setIsLoading(false);
+  }
+   
   }
 
   return (
-    <ThemedView>
+    <ThemedView style={{padding:20}}>
       <ThemedText type="default">Playlist Name:</ThemedText>
       <TextInput
         style={styles.input}
         onChangeText={onChangeText}
         value={text}
+        placeholder="Enter playlist name"
+        placeholderTextColor='#aaa'
       />
       <ThemedText type="default">Minimum BPM:</ThemedText>
       <Picker
         selectedValue={selectedMinBPM}
-        onValueChange={(itemValue, itemIndex)=>
+        onValueChange={(itemValue)=>
           setSelectedMinBPM(itemValue)
         }>
-        <Picker.Item label="70" value="70"/> 
-        <Picker.Item label="80" value="80"/> 
-        <Picker.Item label="90" value="90"/> 
-        <Picker.Item label="100" value="100" />
-        <Picker.Item label="110" value="110" />
-        <Picker.Item label="120" value="120" />
-        <Picker.Item label="200" value="200"/> 
-
+        {['70', '80', '90', '100', '110', '120', '130', '140', '150'].map(bpm => 
+                    <Picker.Item key={bpm} label={bpm} value={bpm}/>
+                )}
       </Picker>
       <ThemedText type="default">Maximum BPM:</ThemedText>
       <Picker
         selectedValue={selectedMaxBPM}
-        onValueChange={(itemValue, itemIndex)=>
+        onValueChange={(itemValue)=>
           setSelectedMaxBPM(itemValue)
         }>
-        <Picker.Item label="70" value="70"/> 
-        <Picker.Item label="80" value="80"/> 
-        <Picker.Item label="90" value="90"/> 
-        <Picker.Item label="100" value="100" />
-        <Picker.Item label="110" value="110" />
-        <Picker.Item label="120" value="120" />
-        <Picker.Item label="200" value="200"/> 
+        {['70', '80', '90', '100', '110', '120', '130', '140', '150'].map(bpm => 
+                    <Picker.Item key={bpm} label={bpm} value={bpm}/>
+                )}
       </Picker>
       <Button
-        title="Enter"
+        title={isLoading ? "Building Playlist...": "Build Spotify Playlist"}
         onPress={handleCreatePlaylist}
+        disabled={isLoading}
       />
+      {isLoading && <ActivityIndicator size="small" style={{ marginTop: 10}}/>}
     </ThemedView>
   );
 };

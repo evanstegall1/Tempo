@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
   Switch,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Pedometer } from "expo-sensors";
+import {StatusBar} from "expo-status-bar";
 
 export default function RealTimeRadioScreen() {
   const [pedometerOn, setPedometerOn] = useState<boolean>(true);
@@ -48,10 +49,13 @@ export default function RealTimeRadioScreen() {
   }, [pedometerOn]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <Text style={styles.title}>Real-time</Text>
+    <View style={styles.container}>
+      <StatusBar style="light"/>
 
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Real-time</Text>
+      </View>
       {/* Pedometer toggle */}
       <View style={styles.row}>
         <Text style={styles.label}>Pedometer</Text>
@@ -100,18 +104,9 @@ export default function RealTimeRadioScreen() {
         </View>
       </View>
 
-      <View style={{ flex: 1 }} />
-
-      {/* Bottom task bar (just a visual bar, real tabs come from router) */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity style={styles.tabItem}>
-          <Text style={styles.tabTextInactive}>Playlist</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.tabItem, styles.activeTab]}>
-          <Text style={styles.tabTextActive}>Real-time</Text>
-        </TouchableOpacity>
       </View>
-    </SafeAreaView>
+
+
   );
 }
 
@@ -122,11 +117,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 24,
   },
+  header:{
+    alignItems:"center", 
+    marginTop:40,
+  },
   title: {
     fontSize: 24,
     fontWeight: "700",
     color: "#ffffff",
-    marginBottom: 16,
   },
   row: {
     flexDirection: "row",
