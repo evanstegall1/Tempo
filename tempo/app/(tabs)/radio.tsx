@@ -16,6 +16,7 @@ export default function RealTimeRadioScreen() {
   const [isAvailable, setIsAvailable] = useState<boolean>(false);
   const [stepsPerMin, setStepsPerMin] = useState<number>(0);
   const [bpm, setBpm] = useState<number>(120);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
   // check if pedometer is available
   useEffect(() => {
@@ -102,6 +103,42 @@ export default function RealTimeRadioScreen() {
           <Text style={styles.tickLabel}>130</Text>
           <Text style={styles.tickLabel}>200</Text>
         </View>
+      </View>
+
+      {/* Music Controls */}
+      <View style={styles.controlsContainer}>
+        <TouchableOpacity 
+          style={styles.controlButton} 
+          onPress={() => {
+            // TODO API call for skip back
+            console.log("Skip back");
+          }}
+        >
+          <Text style={styles.controlButtonText}>⏮</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.controlButton} 
+          onPress={() => {
+            // TODO API call for pause/play
+            setIsPlaying(!isPlaying);
+            console.log(isPlaying ? "Pausing" : "Playing");
+          }}
+        >
+          <Text style={styles.controlButtonText}>
+            {isPlaying ? "⏸" : "▶"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.controlButton} 
+          onPress={() => {
+            // TODO: API call for skip forward
+            console.log("Skip forward");
+          }}
+        >
+          <Text style={styles.controlButtonText}>⏭</Text>
+        </TouchableOpacity>
       </View>
 
       </View>
@@ -209,4 +246,24 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     borderTopColor: "#1DB954",
   },
+  controlsContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 24,
+    marginTop: 40,
+  },
+  controlButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#1DB954",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  controlButtonText: {
+    fontSize: 24,
+    color: "#ffffff",
+  },
 });
+
