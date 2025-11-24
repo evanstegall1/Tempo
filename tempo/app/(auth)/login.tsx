@@ -1,83 +1,122 @@
-import React, { useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  SafeAreaView,
+  Image,
+} from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { useRouter } from "expo-router";
 
 WebBrowser.maybeCompleteAuthSession();
 
-// --- SPOTIFY SETTINGS ---
-const clientId = "YOUR_SPOTIFY_CLIENT_ID"; 
-const redirectUri = "tempo://auth"; 
-const scopes = [
-  "user-read-private",
-  "playlist-read-private",
-  "user-read-email",
-].join(" ");
+// insert real backend URL later:
+const BACKEND_AUTH_URL = "https://your-backend-url.com/auth/spotify";
+const REDIRECT_URI = "tempo://auth-callback"; 
 
 export default function Login() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
-  async function handleSpotifyLogin() {
-    const authUrl =
-      "https://accounts.spotify.com/authorize" +
-      `?client_id=${clientId}` +
-      "&response_type=code" +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&scope=${encodeURIComponent(scopes)}`;
+  const handleLogin = async () => {
+    setLoading(true);
 
-    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+    try {
+      const result = await WebBrowser.openAuthSessionAsync(
+        BACKEND_AUTH_URL,
+        REDIRECT_URI
+      );
 
-    if (result.type === "success" && result.url.includes("?code=")) {
-      const code = result.url.split("code=")[1];
-
-      console.log("Authorization Code:", code);
-
-      // TODO: Exchange code → access token using backend server
-
-      router.replace("/(tabs)/playlists"); // Go to main app after login
+      if (result.type === "success") {
+        router.replace("/(tabs)");
+      }
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Tempo</Text>
-      <Text style={styles.subtitle}>Login to continue</Text>
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.container}>
+        
+        {/* App Title */}
+        <Text style={styles.title}>Tempo</Text>
+        <Text style={styles.subtitle}>Move with your music.</Text>
 
-      <TouchableOpacity style={styles.button} onPress={handleSpotifyLogin}>
-        <Text style={styles.buttonText}>Login with Spotify</Text>
-      </TouchableOpacity>
-    </View>
+        {/* Spotify Button */}
+        <TouchableOpacity
+          style={[styles.button, loading && { opacity: 0.6 }]}
+          disabled={loading}
+          onPress={handleLogin}
+        >
+          {loading ? (
+            <ActivityIndicator color="#000" />
+          ) : (
+            <Text style={styles.buttonText}>Continue with Spotify</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Footer */}
+        <Text style={styles.footer}>
+          By continuing, you agree to Tempo’s Terms and Privacy Policy.
+        </Text>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: "#0B0F14",
+  },
   container: {
     flex: 1,
-    backgroundColor: "#0B0F10",
-    alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 30,
+    alignItems: "center",
+    paddingHorizontal: 32,
   },
   title: {
-    fontSize: 34,
-    fontWeight: "700",
+    fontSize: 42,
+    fontWeight: "800",
     color: "white",
-    marginBottom: 10,
+    letterSpacing: 1,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 18,
-    color: "#9aa0a6",
-    marginBottom: 40,
+    fontSize: 16,
+    color: "#A9ABB3",
+    marginBottom: 60,
   },
   button: {
+    width: "100%",
     backgroundColor: "#1DB954",
     paddingVertical: 14,
-    paddingHorizontal: 35,
     borderRadius: 50,
+    alignItems: "center",
+    shadowColor: "#1DB954",
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
   buttonText: {
-    color: "black",
-    fontWeight: "700",
     fontSize: 18,
+    fontWeight: "700",
+    color: "black",
+  },
+  footer: {
+    position: "absolute",
+    bottom: 40,
+    fontSize: 12,
+    color: "#5F6269",
+    textAlign: "center",
+    paddingHorizontal: 40,
   },
 });
+
+
