@@ -12,15 +12,23 @@ SCOPES = "playlist-modify-public playlist-modify-private user-read-private"
 load_dotenv()
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
-REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI", "http://localhost:8888/callback")
+REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI", "http://127.0.0.1:8888/callback")
+CACHE_PATH = "/home/practiceusernameforjosh/Tempo/.cache"
 
+
+def get_sp_from_token(access_token: str) -> spotipy.Spotify:
+    return spotipy.Spotify(auth=access_token)
+
+'''
 def get_sp() -> spotipy.Spotify:
     return spotipy.Spotify(auth_manager=SpotifyOAuth(
         client_id=client_id,
         client_secret=client_secret,
         redirect_uri=REDIRECT_URI,
-        scope=SCOPES
+        scope=SCOPES,
+	    cache_path=CACHE_PATH,
     ))
+    '''
 
 def get_token():
     auth_string = f"{client_id}:{client_secret}"
@@ -132,9 +140,23 @@ def filter_by_bpm(
         print("[BPM FILTER] Stats:", stats)
     return kept, stats
 
+'''def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str:
+    me = sp.current_user()
+    actual_id = me["id"] #I had to do this to get the user from  access token because user_id is wrong
+    pl = sp.user_playlist_create(user=actual_id, name=name, public=public, description=description)
+    return pl["id"]'''
+
 def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str:
-    pl = sp.user_playlist_create(user=user_id, name=name, public=public, description=description)
+    me = sp.current_user()
+    actual_id = me["id"]
+    print("[DEBUG] create_playlist token user:", actual_id)
+
+    if user_id and user_id != actual_id:
+        print(f"[WARN] Client user_id={user_id} does not match token user_id={actual_id}. Using {actual_id}.")
+
+    pl = sp.user_playlist_create(user=actual_id, name=name, public=public, description=description)
     return pl["id"]
+
 
 def add_to_playlist(sp: spotipy.Spotify, playlist_id: str, uris: List[str]):
     for i in range(0, len(uris), 100):
@@ -183,7 +205,8 @@ def collect_candidates(
         random.shuffle(pool)
     return pool
 
-def get_sure_id(sp: spotipy.Spotify)-> str:
+#potentially change the way we get user_id to get rid of the account conflict error?
+def get_user_id(sp: spotipy.Spotify)-> str:
     try:
         user_profile=sp.current_user()
         return user_profile["id"]
@@ -208,13 +231,14 @@ def build_bpm_playlist(
     max_total_tracks: int = 100,
     debug: bool = True,
     fallback_if_empty: bool = True,
-    fallback_threshold: int = 15
+    fallback_threshold: int = 15,
+    access_token: str, #gets our client toekn from expo
 ) -> dict:
-    sp = get_sp()
+    sp = get_sp_from_token(access_token)
 
     if user_id.lower() == "me":
         try:
-            user_id = get_user_id(sp)
+            user_id = get_sure_id(sp)
         except Exception:
             return {"error": "Could not retrieve Spotify user ID."}
 
