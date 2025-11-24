@@ -1,29 +1,91 @@
-import React, { createContext, useState, useContext, ReactNode, DO_NOT_USE_OR_YOU_WILL_BE_FIRED_CALLBACK_REF_RETURN_VALUES} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useState, useContext, ReactNode, useEffect} from 'react';
+import { ActivityIndicator } from 'react-native';
+
+const STORAGE_KEY = '@BPM_Playlists';
 export type playlist = {
     id: string;
     name: string;
     minBPM: string | number;
     maxBPM: string | number;
+    description: string;
+    artists: string;
+    isPublic: boolean;
+    genres: string[];
 };
 interface playlistsContextType {
     playlists: playlist[];
-    addPlaylist: (name: string, minBPM: string | number, maxBPM: string | number)=> void;
+    addPlaylist: (
+        name: string, 
+        minBPM: string | number, 
+        maxBPM: string | number,
+        description: string,
+        artists: string,
+        isPublic: boolean,
+        genres: string[]
+    )=> void;
 }
 
 const playlistsContext = createContext<playlistsContextType | undefined>(undefined);
 
 export const PlaylistsProvider: React.FC<{ children: ReactNode}>=({children})=>{
     const [playlists, setPlaylists]=useState<playlist[]>([]);
+    const [isLoading, setIsLoading]= useState(true);
 
-    const addPlaylist = (name: string, minBPM: string | number, maxBPM: string | number)=>{
+    const savePlaylists= async (currentPlaylists: playlist[])=>{
+        try{
+            const jsonValue = JSON.stringify(currentPlaylists);
+            await AsyncStorage.setItem(STORAGE_KEY, jsonValue);
+        } catch (e){
+            console.error("Error saving playlists:", e);
+        }
+    };
+
+    useEffect(()=>{
+        const loadPlaylists = async ()=>{
+    try{
+        const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
+        if(jsonValue !==null){
+            setPlaylists(JSON.parse(jsonValue));
+        }
+    }catch (e){
+        console.error("Error loading playlists:", e);
+    }finally{
+        setIsLoading(false);
+    }
+};
+loadPlaylists();
+}, []);
+
+    const addPlaylist = (
+        name: string, 
+        minBPM: string | number, 
+        maxBPM: string | number,
+        description: string,
+        artists: string,
+        isPublic: boolean,
+        genres: string[]
+    )=>{
         const newPlaylist: playlist={
             id: Date.now().toString(),
             name,
             minBPM,
-            maxBPM
+            maxBPM,
+            description,
+            artists,
+            isPublic,
+            genres,
         };
-        setPlaylists((currentPlaylists)=> [...currentPlaylists, newPlaylist]);
-    };
+        setPlaylists((currentPlaylists)=> {
+            const updatedPlaylists= [...currentPlaylists, newPlaylist];
+            savePlaylists(updatedPlaylists);
+            return updatedPlaylists;
+    });
+};
+
+if (isLoading){
+    return <ActivityIndicator size="large"/>;
+}
     
     return(
         <playlistsContext.Provider value={{playlists, addPlaylist}}>

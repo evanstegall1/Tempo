@@ -7,8 +7,28 @@ import {usePlaylists, playlist} from '@/context/playlistsContext'
 
 const PlaylistItem: React.FC<{playlist: playlist}>=({playlist})=>(
   <ThemedView style={styles.playlistBox}>
-    <ThemedText type="subtitle">{playlist.name}</ThemedText>
+    <ThemedText type="subtitle" style={{marginBottom: 4}}>
+      {playlist.name}
+      {playlist.isPublic && <ThemedText type="defaultSemiBold"> (Public)</ThemedText>}
+    </ThemedText>
+
     <ThemedText type="default">BPM Range: {playlist.minBPM} - {playlist.maxBPM}</ThemedText>
+  
+    <ThemedText type="default">
+      Genres: {playlist.genres.length>0 ? playlist.genres.map(g=> g.replace('genre:', '')).join(', '): 'All'}
+    </ThemedText>
+
+    {playlist.artists.length>0 && (
+      <ThemedText type="default">
+        Artists: {playlist.artists}
+      </ThemedText>
+    )}
+
+    {playlist.description.length>0 &&(
+      <ThemedText type="default" style={{marginTop:4, fontStyle: 'italic'}}>
+        Description: {playlist.description}
+      </ThemedText>
+    )}
   </ThemedView>
 )
 export default function HomeScreen() {
