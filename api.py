@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify
 from main import build_bpm_playlist
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/ping", methods=["GET"])
 def ping():
@@ -24,6 +26,10 @@ def build_playlist():
     """
     data = request.get_json(force=True)
 
+    access_token = data.get("access_token")
+    if not access_token:
+        return jsonify({"error": "access_token is required"}), 400
+
     user_id = data["user_id"]
     name = data.get("name", "BPM Playlist")
     queries = data["queries"]
@@ -40,6 +46,7 @@ def build_playlist():
         max_bpm=max_bpm,
         description=description,
         public=public,
+        access_token=access_token
     )
 
     return jsonify(summary)
