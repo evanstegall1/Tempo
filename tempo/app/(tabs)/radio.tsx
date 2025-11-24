@@ -49,6 +49,14 @@ export default function RealTimeRadioScreen() {
     return () => subscription.remove();
   }, [pedometerOn]);
 
+  // sync BPM from pedometer when pedometer is on (and clamp to slider range)
+  useEffect(() => {
+    if (pedometerOn && stepsPerMin > 0) {
+      const clamped = Math.max(60, Math.min(200, stepsPerMin));
+      setBpm(clamped);
+    }
+  }, [pedometerOn, stepsPerMin]);
+
   return (
     <View style={styles.container}>
       <StatusBar style="light"/>
@@ -79,31 +87,43 @@ export default function RealTimeRadioScreen() {
         </View>
       </View>
 
-      {/* BPM slider */}
-      <View style={styles.sliderSection}>
-        <View style={styles.sliderHeader}>
-          <Text style={styles.label}>Target BPM</Text>
-          <Text style={styles.bpmValue}>{Math.round(bpm)} BPM</Text>
+      {/* Switch between pedometer-based and manual slider BPM */}
+      {pedometerOn ? (
+        <View style={styles.sliderSection}>
+          <Text style={styles.pedometerInfo}>
+            Using pedometer input to set BPM: {stepsPerMin > 0 ? stepsPerMin : "--"} BPM
+          </Text>
+          <View style={styles.sliderHeader}>
+            <Text style={styles.label}>Target BPM</Text>
+            <Text style={styles.bpmValue}>{Math.round(bpm)} BPM</Text>
+          </View>
         </View>
+      ) : (
+        <View style={styles.sliderSection}>
+          <View style={styles.sliderHeader}>
+            <Text style={styles.label}>Target BPM</Text>
+            <Text style={styles.bpmValue}>{Math.round(bpm)} BPM</Text>
+          </View>
 
-        <Slider
-          style={{ width: "100%", height: 40 }}
-          minimumValue={60}
-          maximumValue={200}
-          step={1}
-          value={bpm}
-          onValueChange={(value: number) => setBpm(value)}
-          minimumTrackTintColor="#1DB954"
-          maximumTrackTintColor="#ccc"
-          thumbTintColor="#1DB954"
-        />
+          <Slider
+            style={{ width: "100%", height: 40 }}
+            minimumValue={60}
+            maximumValue={200}
+            step={1}
+            value={bpm}
+            onValueChange={(value: number) => setBpm(value)}
+            minimumTrackTintColor="#1DB954"
+            maximumTrackTintColor="#ccc"
+            thumbTintColor="#1DB954"
+          />
 
-        <View style={styles.sliderTicks}>
-          <Text style={styles.tickLabel}>60</Text>
-          <Text style={styles.tickLabel}>130</Text>
-          <Text style={styles.tickLabel}>200</Text>
+          <View style={styles.sliderTicks}>
+            <Text style={styles.tickLabel}>60</Text>
+            <Text style={styles.tickLabel}>130</Text>
+            <Text style={styles.tickLabel}>200</Text>
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Music Controls */}
       <View style={styles.controlsContainer}>
@@ -264,6 +284,11 @@ const styles = StyleSheet.create({
   controlButtonText: {
     fontSize: 24,
     color: "#ffffff",
+  },
+  pedometerInfo: {
+    color: "#cccccc",
+    textAlign: "center",
+    marginBottom: 8,
   },
 });
 
