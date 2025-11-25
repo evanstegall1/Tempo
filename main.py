@@ -7,7 +7,14 @@ from typing import List, Tuple, Dict, Set, Optional
 
 from bpm_lookup import bpm_from_isrc
 
-SCOPES = "playlist-modify-public playlist-modify-private user-read-private"
+SCOPES = (
+    "playlist-modify-public "
+    "playlist-modify-private "
+    "user-read-private "
+    "user-read-playback-state "
+    "user-modify-playback-state "
+    "streaming"
+)
 
 load_dotenv()
 client_id = os.getenv("CLIENT_ID")
@@ -19,7 +26,6 @@ CACHE_PATH = "/home/practiceusernameforjosh/Tempo/.cache"
 def get_sp_from_token(access_token: str) -> spotipy.Spotify:
     return spotipy.Spotify(auth=access_token)
 
-'''
 def get_sp() -> spotipy.Spotify:
     return spotipy.Spotify(auth_manager=SpotifyOAuth(
         client_id=client_id,
@@ -28,7 +34,6 @@ def get_sp() -> spotipy.Spotify:
         scope=SCOPES,
 	    cache_path=CACHE_PATH,
     ))
-    '''
 
 def get_token():
     auth_string = f"{client_id}:{client_secret}"
@@ -140,11 +145,11 @@ def filter_by_bpm(
         print("[BPM FILTER] Stats:", stats)
     return kept, stats
 
-'''def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str:
+def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str:
     me = sp.current_user()
     actual_id = me["id"] #I had to do this to get the user from  access token because user_id is wrong
     pl = sp.user_playlist_create(user=actual_id, name=name, public=public, description=description)
-    return pl["id"]'''
+    return pl["id"]
 
 def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str: 
 	#can change return to Tuple[str, Optional[str]] if we want to return url (see below)
@@ -158,7 +163,6 @@ def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: s
     pl = sp.user_playlist_create(user=actual_id, name=name, public=public, description=description)
     return pl["id"]
 	#, pl.get("external_urls", {}).get("spotify") <- add back if bella wants it to return a touple. if so change it in build_bpm_playlist too
-
 
 def add_to_playlist(sp: spotipy.Spotify, playlist_id: str, uris: List[str]):
     for i in range(0, len(uris), 100):
@@ -309,16 +313,8 @@ def bpm_band_for_pace(
     steps_per_minute: float,
     *,
     mode: str = "double",   # "single" or "double"
-    band_width: float = 10, # +/- range around the target
+    band_width: float = 10, # total width of band
 ) -> Tuple[float, float]:
-    """
-    Convert running cadence (steps/min) into a BPM band for music.
-
-    mode="single"  => target_bpm ≈ steps_per_minute
-    mode="double"  => target_bpm ≈ 2 * steps_per_minute (common for running)
-
-    band_width = total width of the band, so 10 => target ± 5.
-    """
     if steps_per_minute <= 0:
         raise ValueError("steps_per_minute must be positive")
 
@@ -338,24 +334,14 @@ def build_pace_playlist(
     queries: List[str],
     pace_spm: float,
     *,
-    mode: str = "double",
+    mode: str = "single",
     band_width: float = 10,
     description: str = "",
     public: bool = False,
     **kwargs,
 ) -> dict:
-    """
-    Create a playlist whose BPM matches the runner's pace (steps per minute).
-
-    - pace_spm: steps per minute (from pedometer)
-    - mode: "single" (BPM~SPM) or "double" (BPM~2*SPM)
-    - band_width: width of BPM band, e.g. 10 => [target-5, target+5]
-
-    Other keyword args are passed straight through to build_bpm_playlist
-    (artists_per_genre, tracks_per_artist, shuffle, etc.).
-    """
     min_bpm, max_bpm = bpm_band_for_pace(
-        pace_spm,
+        steps_per_minute=pace_spm,
         mode=mode,
         band_width=band_width,
     )
@@ -371,7 +357,19 @@ def build_pace_playlist(
         **kwargs,
     )
 
-
+def play_playlist_now(
+    sp: spotipy.Spotify,
+    playlist_id: str,
+    device_id: Optional[str] = None,
+) -> None:
+    """
+    Start playing the given playlist on the user's active device,
+    or on the device_id you pass in.
+    """
+    sp.start_playback(
+        device_id=device_id,
+        context_uri=f"spotify:playlist:{playlist_id}",
+    )
 # NEW MAIN for pedometer
 
 if __name__ == "__main__":
