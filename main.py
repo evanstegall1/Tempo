@@ -146,16 +146,18 @@ def filter_by_bpm(
     pl = sp.user_playlist_create(user=actual_id, name=name, public=public, description=description)
     return pl["id"]'''
 
-def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str:
+def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str: 
+	#can change return to Tuple[str, Optional[str]] if we want to return url (see below)
     me = sp.current_user()
     actual_id = me["id"]
-    print("[DEBUG] create_playlist token user:", actual_id)
+    #print("[DEBUG] create_playlist token user:", actual_id)
 
     if user_id and user_id != actual_id:
         print(f"[WARN] Client user_id={user_id} does not match token user_id={actual_id}. Using {actual_id}.")
 
     pl = sp.user_playlist_create(user=actual_id, name=name, public=public, description=description)
     return pl["id"]
+	#, pl.get("external_urls", {}).get("spotify") <- add back if bella wants it to return a touple. if so change it in build_bpm_playlist too
 
 
 def add_to_playlist(sp: spotipy.Spotify, playlist_id: str, uris: List[str]):
@@ -286,11 +288,13 @@ def build_bpm_playlist(
             playlist_desc += tag
 
     playlist_id = create_playlist(sp, user_id, name, playlist_desc, public)
+	playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
     if uris:
         add_to_playlist(sp, playlist_id, uris)
 
     return {
         "playlist_id": playlist_id,
+		"playlist_url": playlist_url,
         "added_count": len(uris),
         "min_bpm": min_bpm,
         "max_bpm": max_bpm,
