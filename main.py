@@ -213,7 +213,7 @@ def get_user_id(sp: spotipy.Spotify)-> str:
         user_profile=sp.current_user()
         return user_profile["id"]
     except Exception as e:
-        printf(f"Error fetching user profile:{e}")
+        print(f"Error fetching user profile:{e}")
         raise e
 
 def build_bpm_playlist(
@@ -240,7 +240,7 @@ def build_bpm_playlist(
 
     if user_id.lower() == "me":
         try:
-            user_id = get_sure_id(sp)
+            user_id = get_user_id(sp)
         except Exception:
             return {"error": "Could not retrieve Spotify user ID."}
 
@@ -288,7 +288,7 @@ def build_bpm_playlist(
             playlist_desc += tag
 
     playlist_id = create_playlist(sp, user_id, name, playlist_desc, public)
-	playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
+    playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
     if uris:
         add_to_playlist(sp, playlist_id, uris)
 
@@ -302,6 +302,108 @@ def build_bpm_playlist(
         "fell_back": fell_back,
         "bpm_stats": stats
     }
+
+from typing import Tuple
+
+def bpm_band_for_pace(
+    steps_per_minute: float,
+    *,
+    mode: str = "double",   # "single" or "double"
+    band_width: float = 10, # +/- range around the target
+) -> Tuple[float, float]:
+    """
+    Convert running cadence (steps/min) into a BPM band for music.
+
+    mode="single"  => target_bpm ≈ steps_per_minute
+    mode="double"  => target_bpm ≈ 2 * steps_per_minute (common for running)
+
+    band_width = total width of the band, so 10 => target ± 5.
+    """
+    if steps_per_minute <= 0:
+        raise ValueError("steps_per_minute must be positive")
+
+    if mode == "single":
+        target = steps_per_minute
+    elif mode == "double":
+        target = steps_per_minute * 2.0
+    else:
+        raise ValueError(f"Unknown mode: {mode!r}")
+
+    half = band_width / 2.0
+    return max(40.0, target - half), min(240.0, target + half)
+
+def build_pace_playlist(
+    user_id: str,
+    name: str,
+    queries: List[str],
+    pace_spm: float,
+    *,
+    mode: str = "double",
+    band_width: float = 10,
+    description: str = "",
+    public: bool = False,
+    **kwargs,
+) -> dict:
+    """
+    Create a playlist whose BPM matches the runner's pace (steps per minute).
+
+    - pace_spm: steps per minute (from pedometer)
+    - mode: "single" (BPM~SPM) or "double" (BPM~2*SPM)
+    - band_width: width of BPM band, e.g. 10 => [target-5, target+5]
+
+    Other keyword args are passed straight through to build_bpm_playlist
+    (artists_per_genre, tracks_per_artist, shuffle, etc.).
+    """
+    min_bpm, max_bpm = bpm_band_for_pace(
+        pace_spm,
+        mode=mode,
+        band_width=band_width,
+    )
+
+    return build_bpm_playlist(
+        user_id=user_id,
+        name=name,
+        queries=queries,
+        min_bpm=min_bpm,
+        max_bpm=max_bpm,
+        description=description,
+        public=public,
+        **kwargs,
+    )
+
+
+# NEW MAIN for pedometer
+
+if __name__ == "__main__":
+    # Example: user cadence = 170 steps/min, songs ≈ 170 BPM (band 165–175)
+    summary = build_pace_playlist(
+        user_id="me",
+        name="Pace-matched run",
+        queries=[
+            "genre:rock",
+            "genre:electronic",
+            "running",
+            "artist:Foo Fighters",
+            "artist:Calvin Harris",
+        ],
+        pace_spm=170,
+        mode="single",      # or "double" if pace_spm is per-leg vs total steps
+        band_width=10,
+        description="Auto-generated from my running pace.",
+        artists_per_genre=12,
+        tracks_per_artist=2,
+        per_query_track_limit=12,
+        shuffle=True,
+        max_total_tracks=80,
+        debug=True,
+        fallback_if_empty=True,
+        fallback_threshold=15,
+    )
+    print(summary)
+
+'''
+
+OLD MAIN
 
 if __name__ == "__main__":
     summary = build_bpm_playlist(
@@ -330,3 +432,4 @@ if __name__ == "__main__":
     )
     print(summary)
 
+'''
