@@ -146,16 +146,16 @@ def filter_by_bpm(
     pl = sp.user_playlist_create(user=actual_id, name=name, public=public, description=description)
     return pl["id"]'''
 
-def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str:
+def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> Tuple[str, Optional[str]]:
     me = sp.current_user()
     actual_id = me["id"]
-    print("[DEBUG] create_playlist token user:", actual_id)
+    #print("[DEBUG] create_playlist token user:", actual_id)
 
     if user_id and user_id != actual_id:
         print(f"[WARN] Client user_id={user_id} does not match token user_id={actual_id}. Using {actual_id}.")
 
     pl = sp.user_playlist_create(user=actual_id, name=name, public=public, description=description)
-    return pl["id"]
+    return pl["id"], pl.get("external_urls", {}).get("spotify")
 
 
 def add_to_playlist(sp: spotipy.Spotify, playlist_id: str, uris: List[str]):
