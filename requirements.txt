@@ -1,4 +1,0 @@
-spotipy
-python-dotenv
-requests
-flask
