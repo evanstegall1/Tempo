@@ -68,7 +68,7 @@ export default function LoginScreen() {
         disabled={loading}
       >
         {loading ? (
-          <ActivityIndicator color="#000" />
+          <ActivityIndicator color="#fff" />
         ) : (
           <Text style={styles.buttonText}>Login with Spotify</Text>
         )}
@@ -80,7 +80,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000", 
+    backgroundColor: "#0B0B0D", 
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
@@ -93,19 +93,26 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: "#cccccc",
+    color: "#CFCFCF",
     marginBottom: 40,
   },
   button: {
     backgroundColor: "#1DB954", 
     paddingVertical: 14,
     paddingHorizontal: 32,
-    borderRadius: 999,
+    borderRadius: 16,
+    shadowColor: '#0F7A3A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   buttonText: {
-    color: "#000",
+    color: "#fff",
     fontSize: 16,
     fontWeight: "700",
   },
 });
+
+
 
