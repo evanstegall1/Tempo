@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  Switch,
   TouchableOpacity,
   Platform,
+  TextInput,
+  StyleSheet,
+  Switch,
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { Pedometer } from "expo-sensors";
 import {StatusBar} from "expo-status-bar";
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 
 export default function RealTimeRadioScreen() {
   const [pedometerOn, setPedometerOn] = useState<boolean>(true);
@@ -58,52 +59,53 @@ export default function RealTimeRadioScreen() {
   }, [pedometerOn, stepsPerMin]);
 
   return (
-    <View style={styles.container}>
+    <ThemedView style={styles.container}>
       <StatusBar style="light"/>
 
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Real-time</Text>
-      </View>
+      <ThemedView style={styles.header}>
+        <ThemedText type="title" style={styles.title}>Real-time</ThemedText>
+      </ThemedView>
       {/* Pedometer toggle */}
-      <View style={styles.row}>
-        <Text style={styles.label}>Pedometer</Text>
+      <ThemedView style={styles.row}>
+        <ThemedText type="default" style={styles.label}>Pedometer</ThemedText>
         <Switch value={pedometerOn} onValueChange={setPedometerOn} />
-      </View>
+      </ThemedView>
 
       {!isAvailable && (
-        <Text style={styles.warning}>
+        <ThemedText type="default" style={styles.warning}>
           ⚠️ Pedometer is not supported on this device.
-        </Text>
+        </ThemedText>
       )}
 
       {/* Steps/min circle */}
-      <View style={styles.stepsCircleWrapper}>
-        <View style={styles.stepsCircle}>
-          <Text style={styles.stepsNumber}>
+      <ThemedView style={styles.stepsCircleWrapper}>
+        <ThemedView style={styles.stepsCircle}>
+          <ThemedText type="title" style={styles.stepsNumber}>
             {pedometerOn ? stepsPerMin : "--"}
-          </Text>
-          <Text style={styles.stepsLabel}>steps / min</Text>
-        </View>
-      </View>
+          </ThemedText>
+          <ThemedText type="default" style={styles.stepsLabel}>steps / min</ThemedText>
+        </ThemedView>
+      </ThemedView>
 
       {/* Switch between pedometer-based and manual slider BPM */}
       {pedometerOn ? (
-        <View style={styles.sliderSection}>
-          <Text style={styles.pedometerInfo}>
+        <ThemedView style={styles.sliderSection}>
+          <ThemedText type="default" style={styles.pedometerInfo}>
             Using pedometer input to set BPM: {stepsPerMin > 0 ? stepsPerMin : "--"} BPM
-          </Text>
-          <View style={styles.sliderHeader}>
-            <Text style={styles.label}>Target BPM</Text>
-            <Text style={styles.bpmValue}>{Math.round(bpm)} BPM</Text>
-          </View>
-        </View>
+          </ThemedText>
+          {/* show read-only value in the same pattern as saved playlist */}
+          <ThemedView style={styles.sliderHeader}>
+            <ThemedText type="default">Target BPM</ThemedText>
+            <ThemedText type="defaultSemiBold" style={styles.bpmValue}>{Math.round(bpm)} BPM</ThemedText>
+          </ThemedView>
+        </ThemedView>
       ) : (
-        <View style={styles.sliderSection}>
-          <View style={styles.sliderHeader}>
-            <Text style={styles.label}>Target BPM</Text>
-            <Text style={styles.bpmValue}>{Math.round(bpm)} BPM</Text>
-          </View>
+        <ThemedView style={styles.sliderSection}>
+          <ThemedView style={styles.sliderHeader}>
+            <ThemedText type="default">Target BPM</ThemedText>
+            <ThemedText type="defaultSemiBold" style={styles.bpmValue}>{Math.round(bpm)} BPM</ThemedText>
+          </ThemedView>
 
           <Slider
             style={{ width: "100%", height: 40 }}
@@ -117,51 +119,51 @@ export default function RealTimeRadioScreen() {
             thumbTintColor="#1DB954"
           />
 
-          <View style={styles.sliderTicks}>
-            <Text style={styles.tickLabel}>60</Text>
-            <Text style={styles.tickLabel}>130</Text>
-            <Text style={styles.tickLabel}>200</Text>
-          </View>
-        </View>
+          <ThemedView style={styles.sliderTicks}>
+            <ThemedText type="default" style={styles.tickLabel}>60</ThemedText>
+            <ThemedText type="default" style={styles.tickLabel}>130</ThemedText>
+            <ThemedText type="default" style={styles.tickLabel}>200</ThemedText>
+          </ThemedView>
+        </ThemedView>
       )}
 
       {/* Music Controls */}
-      <View style={styles.controlsContainer}>
+      <ThemedView style={styles.controlsContainer}>
         <TouchableOpacity 
-          style={styles.controlButton} 
+          style={[styles.controlButton, styles.smallControl]}
           onPress={() => {
             // TODO API call for skip back
             console.log("Skip back");
           }}
         >
-          <Text style={styles.controlButtonText}>⏮</Text>
+          <ThemedText type="defaultSemiBold" style={styles.controlButtonText}>⏮</ThemedText>
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={styles.controlButton} 
+          style={[styles.controlButton, styles.playControl]} 
           onPress={() => {
             // TODO API call for pause/play
             setIsPlaying(!isPlaying);
             console.log(isPlaying ? "Pausing" : "Playing");
           }}
         >
-          <Text style={styles.controlButtonText}>
+          <ThemedText type="defaultSemiBold" style={[styles.controlButtonText, styles.playControlText]}>
             {isPlaying ? "⏸" : "▶"}
-          </Text>
+          </ThemedText>
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={styles.controlButton} 
+          style={[styles.controlButton, styles.smallControl]} 
           onPress={() => {
             // TODO: API call for skip forward
             console.log("Skip forward");
           }}
         >
-          <Text style={styles.controlButtonText}>⏭</Text>
+          <ThemedText type="defaultSemiBold" style={styles.controlButtonText}>⏭</ThemedText>
         </TouchableOpacity>
-      </View>
+      </ThemedView>
 
-      </View>
+      </ThemedView>
 
 
   );
@@ -170,8 +172,7 @@ export default function RealTimeRadioScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0b0b0f",
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingTop: 24,
   },
   header:{
@@ -181,7 +182,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#ffffff",
   },
   row: {
     flexDirection: "row",
@@ -191,7 +191,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    color: "#ffffff",
   },
   warning: {
     color: "#ff6b6b",
@@ -213,11 +212,9 @@ const styles = StyleSheet.create({
   stepsNumber: {
     fontSize: 42,
     fontWeight: "700",
-    color: "#ffffff",
   },
   stepsLabel: {
     fontSize: 14,
-    color: "#cccccc",
     marginTop: 4,
   },
   sliderSection: {
@@ -274,16 +271,29 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   controlButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  smallControl: {
     width: 60,
     height: 60,
-    borderRadius: 30,
-    backgroundColor: "#1DB954",
-    alignItems: "center",
-    justifyContent: "center",
+  },
+  playControl: {
+    width: 80,
+    height: 80,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'transparent',
+  },
+  playControlText: {
+    color: '#1DB954',
   },
   controlButtonText: {
     fontSize: 24,
-    color: "#ffffff",
   },
   pedometerInfo: {
     color: "#cccccc",
@@ -291,4 +301,5 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
+
 
