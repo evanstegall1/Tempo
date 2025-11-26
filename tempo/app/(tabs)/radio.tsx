@@ -170,7 +170,7 @@ export default function RealTimeRadioScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0b0b0f",
+    backgroundColor: "#0B0B0D",
     paddingHorizontal: 24,
     paddingTop: 24,
   },
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#ffffff",
+    color: "#FFFFFF",
   },
   row: {
     flexDirection: "row",
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    color: "#ffffff",
+    color: "#EDEDED",
   },
   warning: {
     color: "#ff6b6b",
@@ -205,19 +205,20 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 90,
-    borderWidth: 4,
-    borderColor: "#1DB954",
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderWidth: 3,
+    borderColor: 'rgba(29,185,84,0.9)',
   },
   stepsNumber: {
     fontSize: 42,
     fontWeight: "700",
-    color: "#ffffff",
+    color: "#FFFFFF",
   },
   stepsLabel: {
     fontSize: 14,
-    color: "#cccccc",
+    color: "#CFCFCF",
     marginTop: 4,
   },
   sliderSection: {
@@ -240,7 +241,7 @@ const styles = StyleSheet.create({
   },
   tickLabel: {
     fontSize: 12,
-    color: "#aaaaaa",
+    color: "#BDBDBD",
   },
   tabBar: {
     flexDirection: "row",
@@ -276,10 +277,15 @@ const styles = StyleSheet.create({
   controlButton: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: 14,
     backgroundColor: "#1DB954",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: '#0F7A3A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    elevation: 6,
   },
   controlButtonText: {
     fontSize: 24,
@@ -291,4 +297,3 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
-
