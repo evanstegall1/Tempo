@@ -98,11 +98,14 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    color: "#000000" 
+    backgroundColor: '#0B0B0D',
+    paddingTop: Platform.OS === 'android' ? 8 : 0,
   },
   headerImageContainer:{
     backgroundColor:"transparent",
     marginBottom: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   content:{
     paddingHorizontal:20,
@@ -118,13 +121,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#1DB954',
     paddingVertical: 14,
     paddingHorizontal: 20,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#1DB954',
-    shadowOffset:{width:0, height:4},
-    shadowOpacity:0.5,
-    shadowRadius: 6,
-    elevation:8,
+    shadowColor: '#0F7A3A',
+    shadowOffset:{width:0, height:6},
+    shadowOpacity:0.32,
+    shadowRadius: 8,
+    elevation:10,
   },
   newPlaylistButtonText:{
     color:'white',
@@ -135,46 +138,48 @@ const styles = StyleSheet.create({
     height: 250,
     width: '100%',
     resizeMode: 'cover',
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
     
   },
   listSection:{
     gap:12,
   },
   playlistBoxWrapper:{
-    borderRadius:12,
+    borderRadius:16,
     overflow:'hidden',
   },
   playlistBox:{
     padding:18,
-    borderRadius:12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius:16,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderWidth:1,
     shadowColor:'#000',
-    shadowOffset:{width:0, height:2},
-    shadowOpacity:0.2,
-    shadowRadius: 4,
-    elevation:3,
-    gap: 4,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowOffset:{width:0, height:4},
+    shadowOpacity:0.18,
+    shadowRadius: 6,
+    elevation:4,
+    gap: 6,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   playlistTitle:{
     fontSize:18,
     fontWeight:'900',
     marginBottom:6, 
-    color:'#fff',
+    color:'#FFFFFF',
   },
   detailText:{
     fontSize:14,
-    color:'#aaa',
+    color:'#CFCFCF',
   },
   descriptionText:{
     marginTop:8,
     paddingTop:8, 
     borderTopWidth: 1,
-    borderTopColor:'rgba(255, 255, 255, 0.05)',
+    borderTopColor:'rgba(255, 255, 255, 0.03)',
     fontSize:14,
     fontStyle:'italic',
-    color:'#888',
+    color:'#BFBFBF',
   },
   linkPrompt:{
     fontSize:12,
@@ -185,12 +190,12 @@ const styles = StyleSheet.create({
   },
   emptyBox:{
     padding:20,
-    borderRadius:12,
-    backgroundColor:'rgba(255, 255, 255, 0.05)',
+    borderRadius:16,
+    backgroundColor:'rgba(255, 255, 255, 0.03)',
     alignItems:'center',
   },
   emptyMessage:{
     textAlign:'center',
-    color:'#999',
+    color:'#BDBDBD',
   }
 });
