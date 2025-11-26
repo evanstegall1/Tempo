@@ -5,18 +5,20 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { useRouter } from "expo-router";
+import {useAuth} from "@/context/AuthContext";
 
 WebBrowser.maybeCompleteAuthSession();
 
 // real backend auth URL:
-const BACKEND_AUTH_URL = "https://your-backend-url.com/login-with-spotify";
+const BACKEND_AUTH_URL = "https://practiceusernameforjosh.pythonanywhere.com/auth/spotify/login";
 const REDIRECT_URI = "tempo://auth-callback";
 
 export default function LoginScreen() {
-  const router = useRouter();
+  const {signIn} = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -31,9 +33,24 @@ export default function LoginScreen() {
       console.log("Auth result:", result);
 
       if (result.type === "success") {
-        router.replace("/(tabs)");
+        const redirectUrl= result.url;
+
+        const urlParams=new URLSearchParams(redirectUrl.split('?')[1]);
+        const sessionToken=urlParams.get('token');
+
+        if(sessionToken){
+          await signIn(sessionToken);
+        }else{
+          Alert.alert("Login Failed", "Did not recieve a session token from the backend.");
+          console.error("Authentication success, but missing session token.");
+        }
+      }else if(result.type==="cancel"){
+        console.log("Login cancelled by user.");
+      }else{
+        console.log("Authentication failed or dismissed:", result.type);
       }
     } catch (err) {
+      Alert.alert("Login Error", "An unexpected error occurred during the login process.");
       console.log("Login error:", err);
     } finally {
       setLoading(false);
