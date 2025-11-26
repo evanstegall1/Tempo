@@ -185,7 +185,7 @@ const TestInputExample = ()=>{
         onChangeText={setName}
         value={name}
         placeholder="Enter playlist name"
-        placeholderTextColor='#aaa'
+        placeholderTextColor='#000'
       />
       <ThemedText type="defaultSemiBold" style={{marginTop: 10}}>
         Optional: Select Genres:
@@ -212,7 +212,7 @@ const TestInputExample = ()=>{
         onChangeText={setDescription}
         value={description}
         placeholder="bpm playlist"
-        placeholderTextColor='#aaa'
+        placeholderTextColor='#000'
         multiline
       />
       
@@ -263,9 +263,9 @@ const styles = StyleSheet.create({
     height: 40,
     margin: 8,
     borderWidth: 1,
-    borderColor: "white",
+    borderColor: "black",
     padding: 10,
-    color: "white",
+    color: "black",
     borderRadius: 4,
   },
   multiSelectContainer: {
