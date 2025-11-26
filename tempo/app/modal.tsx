@@ -185,7 +185,7 @@ const TestInputExample = ()=>{
         onChangeText={setName}
         value={name}
         placeholder="Enter playlist name"
-        placeholderTextColor='#000'
+        placeholderTextColor='#BDBDBD'
       />
       <ThemedText type="defaultSemiBold" style={{marginTop: 10}}>
         Optional: Select Genres:
@@ -212,7 +212,7 @@ const TestInputExample = ()=>{
         onChangeText={setDescription}
         value={description}
         placeholder="bpm playlist"
-        placeholderTextColor='#000'
+        placeholderTextColor='#BDBDBD'
         multiline
       />
       
@@ -260,13 +260,14 @@ const TestInputExample = ()=>{
 
 const styles = StyleSheet.create({
   input: {
-    height: 40,
+    height: 44,
     margin: 8,
     borderWidth: 1,
-    borderColor: "black",
-    padding: 10,
-    color: "black",
-    borderRadius: 4,
+    borderColor: "rgba(255,255,255,0.06)",
+    padding: 12,
+    color: "#EDEDED",
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.02)'
   },
   multiSelectContainer: {
         flexDirection: 'row',
@@ -275,25 +276,25 @@ const styles = StyleSheet.create({
         gap: 8, 
     },
     queryPill: {
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 20,
-        borderWidth: 1,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 14,
+      borderWidth: 1,
     },
     queryPillSelected: {
-        backgroundColor: '#1DB954', 
-        borderColor: '#1DB954',
+      backgroundColor: '#1DB954', 
+      borderColor: '#1DB954',
     },
     queryPillUnselected: {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        borderColor: '#ccc',
+      backgroundColor: 'rgba(255, 255, 255, 0.03)',
+      borderColor: 'rgba(255,255,255,0.06)',
     },
     pillTextSelected: {
         color: 'white',
         fontWeight: 'bold',
     },
     pillTextUnselected: {
-        color: '#ccc',
+      color: '#CFCFCF',
     },
     switchContainer: {
         flexDirection: 'row',
@@ -303,14 +304,15 @@ const styles = StyleSheet.create({
     },
     container:{
       flex:1,
+      backgroundColor: '#0B0B0D',
     },
     pickerContainer: {
         borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 5,
+        borderColor: 'rgba(255,255,255,0.06)',
+        borderRadius: 12,
         overflow: 'hidden',
         marginVertical: 8,
-        ...(Platform.OS === 'android' && { backgroundColor: 'rgba(255, 255, 255, 0.1)' }),
+        ...(Platform.OS === 'android' && { backgroundColor: 'rgba(255, 255, 255, 0.02)' }),
     }
 });
 
