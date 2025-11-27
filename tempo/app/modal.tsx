@@ -8,6 +8,9 @@ import {usePlaylists} from '@/context/playlistsContext'
 import {callBuildPlaylist} from '../api/spotify';
 import {BuildPlaylistRequest} from '../api/types'
 
+import { useAuth } from '@/context/AuthContext';
+
+
 const QUERY_OPTIONS=[
   {label: 'Pop', value:'genre:pop'},
   {label: 'Rap', value:'genre:rap'},
@@ -65,18 +68,22 @@ const MultiSelectQuery: React.FC<{
 //async function validateArtist(artistName: string): Promise<boolean>{
 
 //} check artist exists
+
 const TestInputExample = ()=>{
   const {addPlaylist} = usePlaylists();
   const [name, setName] = React.useState('new playlist');
   const [selectedMinBPM, setSelectedMinBPM]=React.useState('70');
   const [selectedMaxBPM, setSelectedMaxBPM]=React.useState('200');
   const [isLoading, setIsLoading]=React.useState(false);
+
+  const auth = useAuth();
+  const USER_ID= auth.userId;
+
   const [artistInput, setArtistInput] = React.useState('');
   const [selectedQueries, setSelectedQueries]= React.useState<string[]>([]);
   const [description, setDescription] = React.useState('');
   const [isPublic, setIsPublic]=React.useState(false)
 
-  const USER_ID= "stegallej";
 
   const handleToggleQuery = (value: string)=>{
     setSelectedQueries(prev=>
@@ -87,6 +94,10 @@ const TestInputExample = ()=>{
   };
 
   const handleCreatePlaylist = async ()=>{
+    if (!USER_ID) {
+      Alert.alert("Authentication Required", "Please ensure you are logged in to build a playlist.");
+      return;
+    }
     const minBPM= parseFloat(selectedMinBPM);
     const maxBPM= parseFloat(selectedMaxBPM);
 
