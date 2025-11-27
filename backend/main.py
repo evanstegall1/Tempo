@@ -238,13 +238,9 @@ def build_bpm_playlist(
     debug: bool = True,
     fallback_if_empty: bool = True,
     fallback_threshold: int = 15,
-    access_token: str, #gets our client toekn from expo
+    access_token: str,
 ) -> dict:
-    if sp is None:
-        if access_token:
-            sp = get_sp_from_token(access_token)
-        else:
-            sp = get_sp()
+    sp = get_sp_from_token(access_token) if access_token else get_sp()
 
     if user_id.lower() == "me":
         try:
@@ -314,21 +310,24 @@ def build_bpm_playlist(
 def bpm_band_for_pace(
     steps_per_minute: float,
     *,
-    mode: str = "double",   # "single" or "double"
-    band_width: float = 10, # total width of band
+    mode: str = "double",
+    band_width: float = 10,
 ) -> Tuple[float, float]:
     if steps_per_minute <= 0:
         raise ValueError("steps_per_minute must be positive")
 
-    if mode == "single":
-        target = steps_per_minute
-    elif mode == "double":
-        target = steps_per_minute * 2.0
-    else:
-        raise ValueError(f"Unknown mode: {mode!r}")
+    target = steps_per_minute if mode == "single" else steps_per_minute * 2.0
 
     half = band_width / 2.0
-    return max(40.0, target - half), min(240.0, target + half)
+    min_bpm = target - half
+    max_bpm = target + half
+
+    
+    min_bpm = max(40.0, min_bpm)
+    max_bpm = min(240.0, max_bpm)
+
+    return min_bpm, max_bpm
+
 
 def build_pace_playlist(
     user_id: str,
