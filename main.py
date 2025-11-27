@@ -12,15 +12,23 @@ SCOPES = "playlist-modify-public playlist-modify-private user-read-private"
 load_dotenv()
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
-REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI", "http://localhost:8888/callback")
+REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI", "http://127.0.0.1:8888/callback")
+CACHE_PATH = "/home/practiceusernameforjosh/Tempo/.cache"
 
+
+def get_sp_from_token(access_token: str) -> spotipy.Spotify:
+    return spotipy.Spotify(auth=access_token)
+
+'''
 def get_sp() -> spotipy.Spotify:
     return spotipy.Spotify(auth_manager=SpotifyOAuth(
         client_id=client_id,
         client_secret=client_secret,
         redirect_uri=REDIRECT_URI,
-        scope=SCOPES
+        scope=SCOPES,
+	    cache_path=CACHE_PATH,
     ))
+    '''
 
 def get_token():
     auth_string = f"{client_id}:{client_secret}"
@@ -132,9 +140,25 @@ def filter_by_bpm(
         print("[BPM FILTER] Stats:", stats)
     return kept, stats
 
-def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str:
-    pl = sp.user_playlist_create(user=user_id, name=name, public=public, description=description)
+'''def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str:
+    me = sp.current_user()
+    actual_id = me["id"] #I had to do this to get the user from  access token because user_id is wrong
+    pl = sp.user_playlist_create(user=actual_id, name=name, public=public, description=description)
+    return pl["id"]'''
+
+def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str: 
+	#can change return to Tuple[str, Optional[str]] if we want to return url (see below)
+    me = sp.current_user()
+    actual_id = me["id"]
+    #print("[DEBUG] create_playlist token user:", actual_id)
+
+    if user_id and user_id != actual_id:
+        print(f"[WARN] Client user_id={user_id} does not match token user_id={actual_id}. Using {actual_id}.")
+
+    pl = sp.user_playlist_create(user=actual_id, name=name, public=public, description=description)
     return pl["id"]
+	#, pl.get("external_urls", {}).get("spotify") <- add back if bella wants it to return a touple. if so change it in build_bpm_playlist too
+
 
 def add_to_playlist(sp: spotipy.Spotify, playlist_id: str, uris: List[str]):
     for i in range(0, len(uris), 100):
@@ -183,12 +207,13 @@ def collect_candidates(
         random.shuffle(pool)
     return pool
 
-def get_sure_id(sp: spotipy.Spotify)-> str:
+#potentially change the way we get user_id to get rid of the account conflict error?
+def get_user_id(sp: spotipy.Spotify)-> str:
     try:
         user_profile=sp.current_user()
         return user_profile["id"]
     except Exception as e:
-        printf(f"Error fetching user profile:{e}")
+        print(f"Error fetching user profile:{e}")
         raise e
 
 def build_bpm_playlist(
@@ -208,9 +233,10 @@ def build_bpm_playlist(
     max_total_tracks: int = 100,
     debug: bool = True,
     fallback_if_empty: bool = True,
-    fallback_threshold: int = 15
+    fallback_threshold: int = 15,
+    access_token: str, #gets our client toekn from expo
 ) -> dict:
-    sp = get_sp()
+    sp = get_sp_from_token(access_token)
 
     if user_id.lower() == "me":
         try:
@@ -262,11 +288,13 @@ def build_bpm_playlist(
             playlist_desc += tag
 
     playlist_id = create_playlist(sp, user_id, name, playlist_desc, public)
+    playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
     if uris:
         add_to_playlist(sp, playlist_id, uris)
 
     return {
         "playlist_id": playlist_id,
+		"playlist_url": playlist_url,
         "added_count": len(uris),
         "min_bpm": min_bpm,
         "max_bpm": max_bpm,
@@ -274,6 +302,108 @@ def build_bpm_playlist(
         "fell_back": fell_back,
         "bpm_stats": stats
     }
+
+from typing import Tuple
+
+def bpm_band_for_pace(
+    steps_per_minute: float,
+    *,
+    mode: str = "double",   # "single" or "double"
+    band_width: float = 10, # +/- range around the target
+) -> Tuple[float, float]:
+    """
+    Convert running cadence (steps/min) into a BPM band for music.
+
+    mode="single"  => target_bpm ≈ steps_per_minute
+    mode="double"  => target_bpm ≈ 2 * steps_per_minute (common for running)
+
+    band_width = total width of the band, so 10 => target ± 5.
+    """
+    if steps_per_minute <= 0:
+        raise ValueError("steps_per_minute must be positive")
+
+    if mode == "single":
+        target = steps_per_minute
+    elif mode == "double":
+        target = steps_per_minute * 2.0
+    else:
+        raise ValueError(f"Unknown mode: {mode!r}")
+
+    half = band_width / 2.0
+    return max(40.0, target - half), min(240.0, target + half)
+
+def build_pace_playlist(
+    user_id: str,
+    name: str,
+    queries: List[str],
+    pace_spm: float,
+    *,
+    mode: str = "double",
+    band_width: float = 10,
+    description: str = "",
+    public: bool = False,
+    **kwargs,
+) -> dict:
+    """
+    Create a playlist whose BPM matches the runner's pace (steps per minute).
+
+    - pace_spm: steps per minute (from pedometer)
+    - mode: "single" (BPM~SPM) or "double" (BPM~2*SPM)
+    - band_width: width of BPM band, e.g. 10 => [target-5, target+5]
+
+    Other keyword args are passed straight through to build_bpm_playlist
+    (artists_per_genre, tracks_per_artist, shuffle, etc.).
+    """
+    min_bpm, max_bpm = bpm_band_for_pace(
+        pace_spm,
+        mode=mode,
+        band_width=band_width,
+    )
+
+    return build_bpm_playlist(
+        user_id=user_id,
+        name=name,
+        queries=queries,
+        min_bpm=min_bpm,
+        max_bpm=max_bpm,
+        description=description,
+        public=public,
+        **kwargs,
+    )
+
+
+# NEW MAIN for pedometer
+
+if __name__ == "__main__":
+    # Example: user cadence = 170 steps/min, songs ≈ 170 BPM (band 165–175)
+    summary = build_pace_playlist(
+        user_id="me",
+        name="Pace-matched run",
+        queries=[
+            "genre:rock",
+            "genre:electronic",
+            "running",
+            "artist:Foo Fighters",
+            "artist:Calvin Harris",
+        ],
+        pace_spm=170,
+        mode="single",      # or "double" if pace_spm is per-leg vs total steps
+        band_width=10,
+        description="Auto-generated from my running pace.",
+        artists_per_genre=12,
+        tracks_per_artist=2,
+        per_query_track_limit=12,
+        shuffle=True,
+        max_total_tracks=80,
+        debug=True,
+        fallback_if_empty=True,
+        fallback_threshold=15,
+    )
+    print(summary)
+
+'''
+
+OLD MAIN
 
 if __name__ == "__main__":
     summary = build_bpm_playlist(
@@ -302,3 +432,4 @@ if __name__ == "__main__":
     )
     print(summary)
 
+'''
