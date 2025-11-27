@@ -7,16 +7,21 @@ import {Picker} from '@react-native-picker/picker'
 import {usePlaylists} from '@/context/playlistsContext'
 import {callBuildPlaylist} from '../api/spotify';
 import {BuildPlaylistRequest} from '../api/types'
+import { useAuth } from '@/context/AuthContext';
 const TestInputExample = ()=>{
   const {addPlaylist} = usePlaylists();
   const [text, onChangeText] = React.useState('new playlist');
   const [selectedMinBPM, setSelectedMinBPM]=React.useState('70');
   const [selectedMaxBPM, setSelectedMaxBPM]=React.useState('200');
   const [isLoading, setIsLoading]=React.useState(false);
-
-  const USER_ID= "stegallej";
+  const auth = useAuth();
+  const USER_ID= auth.userId;
 
   const handleCreatePlaylist = async ()=>{
+    if (!USER_ID) {
+      Alert.alert("Authentication Required", "Please ensure you are logged in to build a playlist.");
+      return;
+    }
     const minBPM= parseFloat(selectedMinBPM);
     const maxBPM= parseFloat(selectedMaxBPM);
 

@@ -47,9 +47,10 @@ export default function LoginScreen() {
 
         const urlParams=new URLSearchParams(redirectUrl.split('?')[1]);
         const sessionToken=urlParams.get('access_token');
+        const userId = urlParams.get('user_id');
 
-        if(sessionToken){
-          await signIn(sessionToken);
+        if(sessionToken&& userId){
+          await signIn(sessionToken, userId);
         }else{
           Alert.alert("Login Failed", "Did not recieve a session token from the backend.");
           console.error("Authentication success, but missing session token.");
