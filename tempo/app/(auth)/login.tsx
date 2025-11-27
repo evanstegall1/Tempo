@@ -21,9 +21,7 @@ const REDIRECT_URI = AuthSession.makeRedirectUri({
   path: 'redirect',
 });
 
-const discovery = {
-    authorizationEndpoint: 'https://accounts.spotify.com/authorize',
-};
+
 
 export default function LoginScreen() {
   const {signIn} = useAuth();
@@ -37,7 +35,7 @@ export default function LoginScreen() {
 
      
 
-      const finalAuthUrl = `${BACKEND_AUTH_URL}`;
+      const finalAuthUrl = `${BACKEND_AUTH_URL}?client_redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
       
       const result = await WebBrowser.openAuthSessionAsync(
         finalAuthUrl,
