@@ -22,6 +22,9 @@ MAX_VALID_BPM = 240.0
 
 _cache: Dict[str, Any] = {}
 
+
+
+
 def _load_cache():
     global _cache
     if _cache:
@@ -97,42 +100,29 @@ def _deezer_bpm_by_isrc(isrc: str) -> Optional[float]:
     except Exception:
         return None
 
-def _getsongbpm_by_isrc(isrc: str) -> Optional[float]:
-    if not GETSONGBPM_API_KEY:
-        return None
-    url = "https://api.getsongbpm.com/search/"
-    data = _get_json(url, params={"api_key": GETSONGBPM_API_KEY, "isrc": isrc})
-    if not data:
-        return None
-    arr = data.get("search") or []
-    for item in arr:
-        tempo = item.get("tempo")
-        try:
-            val = float(tempo)
-            if val > 0:
-                return val
-        except Exception:
-            continue
+def _getsongbpm_by_isrc(isrc: str):
+    data = _get_json(
+        "https://api.getsongbpm.com/search/",
+        params={"isrc": isrc, "api_key": os.getenv("GETSONGBPM_API_KEY")},
+    )
+
+    if data and "search" in data and data["search"]:
+        return float(data["search"][0]["tempo"])
+
     return None
 
-def _getsongbpm_by_search(artist: str, title: str) -> Optional[float]:
-    if not GETSONGBPM_API_KEY:
-        return None
-    url = "https://api.getsongbpm.com/search/"
-    q = f"{artist} {title}".strip()
-    data = _get_json(url, params={"api_key": GETSONGBPM_API_KEY, "type": "both", "lookup": q})
-    if not data:
-        return None
-    arr = data.get("search") or []
-    for item in arr:
-        tempo = item.get("tempo")
-        try:
-            val = float(tempo)
-            if val > 0:
-                return val
-        except Exception:
-            continue
+
+def _getsongbpm_by_search(artist: str, title: str):
+    data = _get_json(
+        "https://api.getsongbpm.com/search/",
+        params={"lookup": f"{artist} {title}", "type": "both", "api_key": os.getenv("GETSONGBPM_API_KEY")},
+    )
+
+    if data and "search" in data and data["search"]:
+        return float(data["search"][0]["tempo"])
+
     return None
+
 
 def bpm_from_isrc(
     isrc: str,
