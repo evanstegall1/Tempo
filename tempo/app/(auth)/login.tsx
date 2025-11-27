@@ -8,35 +8,47 @@ import {
   Alert,
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
+import * as AuthSession from 'expo-auth-session';
 import { useRouter } from "expo-router";
 import {useAuth} from "@/context/AuthContext";
 
 WebBrowser.maybeCompleteAuthSession();
-
+const SPOTIFY_CLIENT_ID = "61ef38017c3e4f7c92297931df2e3c87";
 // real backend auth URL:
 const BACKEND_AUTH_URL = "https://practiceusernameforjosh.pythonanywhere.com/auth/spotify/login";
-const REDIRECT_URI = "tempo://auth-callback";
+const REDIRECT_URI = AuthSession.makeRedirectUri({
+  scheme: 'tempo',
+  path: 'redirect',
+});
+
+const discovery = {
+    authorizationEndpoint: 'https://accounts.spotify.com/authorize',
+};
 
 export default function LoginScreen() {
   const {signIn} = useAuth();
   const [loading, setLoading] = useState(false);
 
+  
+
   const handleLogin = async () => {
     try {
       setLoading(true);
 
+     
+
+      const finalAuthUrl = `${BACKEND_AUTH_URL}`;
+      
       const result = await WebBrowser.openAuthSessionAsync(
-        BACKEND_AUTH_URL,
+        finalAuthUrl,
         REDIRECT_URI
       );
-
-      console.log("Auth result:", result);
 
       if (result.type === "success") {
         const redirectUrl= result.url;
 
         const urlParams=new URLSearchParams(redirectUrl.split('?')[1]);
-        const sessionToken=urlParams.get('token');
+        const sessionToken=urlParams.get('access_token');
 
         if(sessionToken){
           await signIn(sessionToken);
