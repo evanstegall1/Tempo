@@ -8,49 +8,72 @@ import {
   Alert,
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
+import * as AuthSession from "expo-auth-session";
 import { useRouter } from "expo-router";
-import {useAuth} from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 
 WebBrowser.maybeCompleteAuthSession();
 
-// real backend auth URL:
-const BACKEND_AUTH_URL = "https://practiceusernameforjosh.pythonanywhere.com/auth/spotify/login";
-const REDIRECT_URI = "tempo://auth-callback";
+// Base backend auth URL 
+const BACKEND_AUTH_URL =
+  "https://practiceusernameforjosh.pythonanywhere.com/auth/spotify/login";
+
+const REDIRECT_URI = AuthSession.makeRedirectUri({
+  scheme: "tempo",
+  path: "auth-callback", // gives tempo://auth-callback
+});
 
 export default function LoginScreen() {
-  const {signIn} = useAuth();
+  const { signIn } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     try {
       setLoading(true);
 
+      // This is the dynamically generated link
+      const authUrl =
+        BACKEND_AUTH_URL +
+        `?redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+
       const result = await WebBrowser.openAuthSessionAsync(
-        BACKEND_AUTH_URL,
+        authUrl,
         REDIRECT_URI
       );
 
       console.log("Auth result:", result);
 
-      if (result.type === "success") {
-        const redirectUrl= result.url;
+      if (result.type === "success" && result.url) {
+        const redirectUrl = result.url;
 
-        const urlParams=new URLSearchParams(redirectUrl.split('?')[1]);
-        const sessionToken=urlParams.get('token');
+        // pull ?token=... out of the callback URL
+        const queryString = redirectUrl.split("?")[1] ?? "";
+        const urlParams = new URLSearchParams(queryString);
+        const sessionToken = urlParams.get("token");
 
-        if(sessionToken){
+        if (sessionToken) {
           await signIn(sessionToken);
-        }else{
-          Alert.alert("Login Failed", "Did not recieve a session token from the backend.");
-          console.error("Authentication success, but missing session token.");
+          router.replace("/(tabs)");
+        } else {
+          Alert.alert(
+            "Login Failed",
+            "Did not receive a session token from the backend."
+          );
+          console.error(
+            "Authentication success, but missing session token in redirect URL."
+          );
         }
-      }else if(result.type==="cancel"){
+      } else if (result.type === "cancel") {
         console.log("Login cancelled by user.");
-      }else{
+      } else {
         console.log("Authentication failed or dismissed:", result.type);
       }
     } catch (err) {
-      Alert.alert("Login Error", "An unexpected error occurred during the login process.");
+      Alert.alert(
+        "Login Error",
+        "An unexpected error occurred during the login process."
+      );
       console.log("Login error:", err);
     } finally {
       setLoading(false);
@@ -80,7 +103,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0B0B0D", 
+    backgroundColor: "#0B0B0D",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
@@ -97,11 +120,11 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   button: {
-    backgroundColor: "#1DB954", 
+    backgroundColor: "#1DB954",
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 16,
-    shadowColor: '#0F7A3A',
+    shadowColor: "#0F7A3A",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -113,6 +136,3 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
-
-
-
