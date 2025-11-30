@@ -178,7 +178,8 @@ const TestInputExample = ()=>{
       description,
       artistInput,
       isPublic,
-      selectedQueries);
+      selectedQueries,
+      summary.playlist_id);
 
     Alert.alert(
       'Playlist Built!', 
