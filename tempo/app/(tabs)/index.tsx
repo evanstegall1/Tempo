@@ -5,28 +5,40 @@ import { ThemedView } from '@/components/themed-view';
 import { Link } from 'expo-router';
 import {usePlaylists, playlist} from '@/context/playlistsContext'
 import {useAuth} from '@/context/AuthContext';
+import React, {useState} from 'react';
 
 const openSpotifyPlaylist=(spotifyId:string)=>{
   if(!spotifyId){
     console.warn("Spotify ID is missing for this playlist");
   }
-  const url =`http://open.spotify.com/playlist/${spotifyId}`;
+  const url =`https://open.spotify.com/playlist/${spotifyId}`;
   Linking.openURL(url).catch((err)=>{
-    console.error( "Failed to open Spoptify link:", err);
+    console.error( "Failed to open Spotify link:", err);
   });
 };
 
-const PlaylistItem: React.FC<{playlist: playlist}>=({playlist})=>(
+const PlaylistItem: React.FC<{playlist: playlist, onDelete: (id:string)=> void}>=({playlist, onDelete})=>(
   <TouchableOpacity
     //onPress={()=> openSpotifyPlaylist(playlist.spotifyId)}
     style={styles.playlistBoxWrapper}
   >
   <ThemedView style={styles.playlistBox}>
+    <ThemedView style={styles.titleRow}>
     <ThemedText type="subtitle" style={styles.playlistTitle}>
       {playlist.name}
       {playlist.isPublic && <ThemedText type="defaultSemiBold"> (Public)</ThemedText>}
     </ThemedText>
 
+    <TouchableOpacity
+      onPress={(e)=>{
+        e.stopPropagation();
+        onDelete(playlist.id);
+      }}
+      style={styles.deleteButton}
+    >
+      <ThemedText style={styles.deleteButtonText}>delete</ThemedText>
+    </TouchableOpacity>
+    </ThemedView>
     <ThemedText type="default" style={styles.detailText}>
       <ThemedText type="defaultSemiBold">BPM Range:</ThemedText> {playlist.minBPM} - {playlist.maxBPM}
     </ThemedText>
@@ -54,8 +66,23 @@ const PlaylistItem: React.FC<{playlist: playlist}>=({playlist})=>(
   </TouchableOpacity>
 );
 export default function HomeScreen() {
-  const {playlists}=usePlaylists();
+  const {playlists, removePlaylist}=usePlaylists();
+  const [showDeleteWarning, setShowDeleteWarning] = useState(false);
+  const [playlistToDeleteId, setPlaylistToDeleteId] = useState<string | null>(null);
   const { signOut } = useAuth();
+
+  const handleInitialDeletePress = (id: string) => {
+    setShowDeleteWarning(true); 
+    setPlaylistToDeleteId(id); 
+  };
+
+  const confirmDelete = () => {
+    if (playlistToDeleteId) {
+      removePlaylist(playlistToDeleteId); 
+      setPlaylistToDeleteId(null);
+      setShowDeleteWarning(false);
+    }
+  };
   return (
     <ScrollView style ={styles.container}>
       <ThemedView style={styles.headerImageContainer}>
@@ -85,13 +112,30 @@ export default function HomeScreen() {
         </Link>
       </ThemedView>
 
+      {showDeleteWarning && (
+          <ThemedView style={styles.warningBanner}>
+            <ThemedText style={styles.warningText}>
+              🚨 **Warning:** Deleting this entry will only remove the **playlist object from the Tempo App**. 
+              It will **NOT** delete the playlist from your Spotify account.
+            </ThemedText>
+            <ThemedView style={styles.warningActions}>
+              <TouchableOpacity onPress={confirmDelete} style={[styles.warningButton, styles.warningConfirm]}>
+                <ThemedText style={styles.warningConfirmText}>Confirm Delete</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowDeleteWarning(false)} style={styles.warningButton}>
+                <ThemedText style={styles.warningCancelText}>Cancel</ThemedText>
+              </TouchableOpacity>
+            </ThemedView>
+          </ThemedView>
+        )}
+
       <ThemedView style={styles.listSection}>
         {playlists.length>0?(
-          playlists.map(item => <PlaylistItem key={item.id} playlist = {item}/>)
+          playlists.map(item => <PlaylistItem key={item.id} playlist = {item} onDelete={handleInitialDeletePress}/>)
         ):(
           <ThemedView style={styles.emptyBox}>
           <ThemedText type="defaultSemiBold" style={styles.emptyMessage}>
-            No playlists yet. Click 'Createn New Playlist' to begin!
+            No playlists yet. Click 'Create New Playlist' to begin!
           </ThemedText>
           </ThemedView>
         )}
@@ -103,6 +147,57 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  titleRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6, 
+    },
+    deleteButton: {
+        padding: 4,
+        backgroundColor: 'rgba(255, 99, 71, 0.1)', 
+        borderRadius: 8,
+    },
+    deleteButtonText: {
+        fontSize: 18,
+    },
+    warningBanner: {
+        backgroundColor: '#201A06', 
+        borderColor: '#FFD700',
+        borderWidth: 1,
+        padding: 15,
+        borderRadius: 12,
+        marginBottom: 20,
+        gap: 10,
+    },
+    warningText: {
+        color: '#FFD700',
+        fontSize: 14,
+        lineHeight: 20,
+    },
+    warningActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 10,
+    },
+    warningButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+    },
+    warningConfirm: {
+        backgroundColor: '#CC3333', 
+    },
+    warningConfirmText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    warningCancelText: {
+        color: '#BDBDBD',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
   signOutButtonContainer: {
         position: 'absolute',
         top: Platform.OS === 'ios' ? 60 : 20, 

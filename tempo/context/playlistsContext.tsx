@@ -24,6 +24,7 @@ interface playlistsContextType {
         isPublic: boolean,
         genres: string[]
     )=> void;
+    removePlaylist: (id:string)=> void;
 }
 
 const playlistsContext = createContext<playlistsContextType | undefined>(undefined);
@@ -83,12 +84,20 @@ loadPlaylists();
     });
 };
 
+    const removePlaylist = (id: string) => {
+        setPlaylists((currentPlaylists) => {
+            const updatedPlaylists = currentPlaylists.filter(p => p.id !== id);
+            savePlaylists(updatedPlaylists);
+            return updatedPlaylists;
+        });
+    };
+
 if (isLoading){
     return <ActivityIndicator size="large"/>;
 }
     
     return(
-        <playlistsContext.Provider value={{playlists, addPlaylist}}>
+        <playlistsContext.Provider value={{playlists, addPlaylist, removePlaylist}}>
             {children}
         </playlistsContext.Provider>
     );

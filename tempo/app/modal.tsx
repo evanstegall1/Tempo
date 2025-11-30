@@ -266,7 +266,7 @@ const TestInputExample = ()=>{
       </ThemedView>
 
       <ThemedView style={styles.switchContainer}>
-        <ThemedText type="default">MAke Public:</ThemedText>
+        <ThemedText type="default">Make Public:</ThemedText>
         <Switch
           onValueChange ={setIsPublic}
           value={isPublic}
