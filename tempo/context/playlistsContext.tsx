@@ -5,6 +5,7 @@ import { ActivityIndicator } from 'react-native';
 const STORAGE_KEY = '@BPM_Playlists';
 export type playlist = {
     id: string;
+    spotifyId: string;
     name: string;
     minBPM: string | number;
     maxBPM: string | number;
@@ -22,8 +23,10 @@ interface playlistsContextType {
         description: string,
         artists: string,
         isPublic: boolean,
-        genres: string[]
+        genres: string[],
+        spotifyId: string
     )=> void;
+    removePlaylist: (id:string)=> void;
 }
 
 const playlistsContext = createContext<playlistsContextType | undefined>(undefined);
@@ -64,10 +67,12 @@ loadPlaylists();
         description: string,
         artists: string,
         isPublic: boolean,
-        genres: string[]
+        genres: string[],
+        spotifyId: string
     )=>{
         const newPlaylist: playlist={
             id: Date.now().toString(),
+            spotifyId,
             name,
             minBPM,
             maxBPM,
@@ -77,18 +82,26 @@ loadPlaylists();
             genres,
         };
         setPlaylists((currentPlaylists)=> {
-            const updatedPlaylists= [...currentPlaylists, newPlaylist];
+            const updatedPlaylists= [newPlaylist, ...currentPlaylists];
             savePlaylists(updatedPlaylists);
             return updatedPlaylists;
     });
 };
+
+    const removePlaylist = (id: string) => {
+        setPlaylists((currentPlaylists) => {
+            const updatedPlaylists = currentPlaylists.filter(p => p.id !== id);
+            savePlaylists(updatedPlaylists);
+            return updatedPlaylists;
+        });
+    };
 
 if (isLoading){
     return <ActivityIndicator size="large"/>;
 }
     
     return(
-        <playlistsContext.Provider value={{playlists, addPlaylist}}>
+        <playlistsContext.Provider value={{playlists, addPlaylist, removePlaylist}}>
             {children}
         </playlistsContext.Provider>
     );

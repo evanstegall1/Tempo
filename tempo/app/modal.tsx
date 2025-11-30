@@ -178,7 +178,8 @@ const TestInputExample = ()=>{
       description,
       artistInput,
       isPublic,
-      selectedQueries);
+      selectedQueries,
+      summary.playlist_id);
 
     Alert.alert(
       'Playlist Built!', 
@@ -266,7 +267,7 @@ const TestInputExample = ()=>{
       </ThemedView>
 
       <ThemedView style={styles.switchContainer}>
-        <ThemedText type="default">MAke Public:</ThemedText>
+        <ThemedText type="default">Make Public:</ThemedText>
         <Switch
           onValueChange ={setIsPublic}
           value={isPublic}
