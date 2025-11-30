@@ -8,38 +8,49 @@ import {
   Alert,
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
+import * as AuthSession from 'expo-auth-session';
 import { useRouter } from "expo-router";
 import {useAuth} from "@/context/AuthContext";
 
 WebBrowser.maybeCompleteAuthSession();
-
+const SPOTIFY_CLIENT_ID = "61ef38017c3e4f7c92297931df2e3c87";
 // real backend auth URL:
 const BACKEND_AUTH_URL = "https://practiceusernameforjosh.pythonanywhere.com/auth/spotify/login";
-const REDIRECT_URI = "tempo://auth-callback";
+const REDIRECT_URI = AuthSession.makeRedirectUri({
+  scheme: 'tempo',
+  path: 'redirect',
+});
+
+
 
 export default function LoginScreen() {
   const {signIn} = useAuth();
   const [loading, setLoading] = useState(false);
 
+  
+
   const handleLogin = async () => {
     try {
       setLoading(true);
 
+     
+
+      const finalAuthUrl = `${BACKEND_AUTH_URL}?client_redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+      
       const result = await WebBrowser.openAuthSessionAsync(
-        BACKEND_AUTH_URL,
+        finalAuthUrl,
         REDIRECT_URI
       );
-
-      console.log("Auth result:", result);
 
       if (result.type === "success") {
         const redirectUrl= result.url;
 
         const urlParams=new URLSearchParams(redirectUrl.split('?')[1]);
-        const sessionToken=urlParams.get('token');
+        const sessionToken=urlParams.get('access_token');
+        const userId = urlParams.get('user_id');
 
-        if(sessionToken){
-          await signIn(sessionToken);
+        if(sessionToken&& userId){
+          await signIn(sessionToken, userId);
         }else{
           Alert.alert("Login Failed", "Did not recieve a session token from the backend.");
           console.error("Authentication success, but missing session token.");
@@ -68,7 +79,7 @@ export default function LoginScreen() {
         disabled={loading}
       >
         {loading ? (
-          <ActivityIndicator color="#000" />
+          <ActivityIndicator color="#fff" />
         ) : (
           <Text style={styles.buttonText}>Login with Spotify</Text>
         )}
@@ -80,7 +91,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000", 
+    backgroundColor: "#0B0B0D", 
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
@@ -93,19 +104,26 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: "#cccccc",
+    color: "#CFCFCF",
     marginBottom: 40,
   },
   button: {
     backgroundColor: "#1DB954", 
     paddingVertical: 14,
     paddingHorizontal: 32,
-    borderRadius: 999,
+    borderRadius: 16,
+    shadowColor: '#0F7A3A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   buttonText: {
-    color: "#000",
+    color: "#fff",
     fontSize: 16,
     fontWeight: "700",
   },
 });
+
+
 

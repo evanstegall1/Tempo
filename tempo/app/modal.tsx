@@ -8,6 +8,9 @@ import {usePlaylists} from '@/context/playlistsContext'
 import {callBuildPlaylist} from '../api/spotify';
 import {BuildPlaylistRequest} from '../api/types'
 
+import { useAuth } from '@/context/AuthContext';
+
+
 const QUERY_OPTIONS=[
   {label: 'Pop', value:'genre:pop'},
   {label: 'Rap', value:'genre:rap'},
@@ -65,18 +68,22 @@ const MultiSelectQuery: React.FC<{
 //async function validateArtist(artistName: string): Promise<boolean>{
 
 //} check artist exists
+
 const TestInputExample = ()=>{
   const {addPlaylist} = usePlaylists();
   const [name, setName] = React.useState('new playlist');
   const [selectedMinBPM, setSelectedMinBPM]=React.useState('70');
   const [selectedMaxBPM, setSelectedMaxBPM]=React.useState('200');
   const [isLoading, setIsLoading]=React.useState(false);
+
+  const auth = useAuth();
+  const USER_ID= auth.userId;
+
   const [artistInput, setArtistInput] = React.useState('');
   const [selectedQueries, setSelectedQueries]= React.useState<string[]>([]);
   const [description, setDescription] = React.useState('');
   const [isPublic, setIsPublic]=React.useState(false)
 
-  const USER_ID= "stegallej";
 
   const handleToggleQuery = (value: string)=>{
     setSelectedQueries(prev=>
@@ -87,6 +94,10 @@ const TestInputExample = ()=>{
   };
 
   const handleCreatePlaylist = async ()=>{
+    if (!USER_ID) {
+      Alert.alert("Authentication Required", "Please ensure you are logged in to build a playlist.");
+      return;
+    }
     const minBPM= parseFloat(selectedMinBPM);
     const maxBPM= parseFloat(selectedMaxBPM);
 
@@ -185,7 +196,7 @@ const TestInputExample = ()=>{
         onChangeText={setName}
         value={name}
         placeholder="Enter playlist name"
-        placeholderTextColor='#000'
+        placeholderTextColor='#BDBDBD'
       />
       <ThemedText type="defaultSemiBold" style={{marginTop: 10}}>
         Optional: Select Genres:
@@ -212,7 +223,7 @@ const TestInputExample = ()=>{
         onChangeText={setDescription}
         value={description}
         placeholder="bpm playlist"
-        placeholderTextColor='#000'
+        placeholderTextColor='#BDBDBD'
         multiline
       />
       
@@ -260,13 +271,14 @@ const TestInputExample = ()=>{
 
 const styles = StyleSheet.create({
   input: {
-    height: 40,
+    height: 44,
     margin: 8,
     borderWidth: 1,
-    borderColor: "black",
-    padding: 10,
-    color: "black",
-    borderRadius: 4,
+    borderColor: "rgba(255,255,255,0.06)",
+    padding: 12,
+    color: "#EDEDED",
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.02)'
   },
   multiSelectContainer: {
         flexDirection: 'row',
@@ -275,25 +287,25 @@ const styles = StyleSheet.create({
         gap: 8, 
     },
     queryPill: {
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 20,
-        borderWidth: 1,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 14,
+      borderWidth: 1,
     },
     queryPillSelected: {
-        backgroundColor: '#1DB954', 
-        borderColor: '#1DB954',
+      backgroundColor: '#1DB954', 
+      borderColor: '#1DB954',
     },
     queryPillUnselected: {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        borderColor: '#ccc',
+      backgroundColor: 'rgba(255, 255, 255, 0.03)',
+      borderColor: 'rgba(255,255,255,0.06)',
     },
     pillTextSelected: {
         color: 'white',
         fontWeight: 'bold',
     },
     pillTextUnselected: {
-        color: '#ccc',
+      color: '#CFCFCF',
     },
     switchContainer: {
         flexDirection: 'row',
@@ -303,14 +315,15 @@ const styles = StyleSheet.create({
     },
     container:{
       flex:1,
+      backgroundColor: '#0B0B0D',
     },
     pickerContainer: {
         borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 5,
+        borderColor: 'rgba(255,255,255,0.06)',
+        borderRadius: 12,
         overflow: 'hidden',
         marginVertical: 8,
-        ...(Platform.OS === 'android' && { backgroundColor: 'rgba(255, 255, 255, 0.1)' }),
+        ...(Platform.OS === 'android' && { backgroundColor: 'rgba(255, 255, 255, 0.02)' }),
     }
 });
 

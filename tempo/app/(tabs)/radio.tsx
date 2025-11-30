@@ -204,10 +204,11 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 90,
-    borderWidth: 4,
-    borderColor: "#1DB954",
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderWidth: 3,
+    borderColor: 'rgba(29,185,84,0.9)',
   },
   stepsNumber: {
     fontSize: 42,
@@ -237,7 +238,7 @@ const styles = StyleSheet.create({
   },
   tickLabel: {
     fontSize: 12,
-    color: "#aaaaaa",
+    color: "#BDBDBD",
   },
   tabBar: {
     flexDirection: "row",
