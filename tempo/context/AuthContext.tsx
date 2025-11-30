@@ -8,6 +8,7 @@ interface AuthContextType{
     session:string|null;
     userId:string|null; 
     isLoading:boolean;
+    handleExpiredToken: (errorTitle: string, errorMessage: string) => void;
 }
 
 const AuthContext=createContext<AuthContextType | undefined>(undefined);
@@ -62,6 +63,11 @@ export function AuthProvider({children}:{children: React.ReactNode}){
             console.error('Failed to delete session token:', e);
         }
     };
+
+    const handleExpiredToken = async (errorTitle: string, errorMessage: string) => {
+        await signOut(); 
+        console.log("Session expired. User signed out.");
+    };
     
     return(
         <AuthContext.Provider
@@ -71,6 +77,7 @@ export function AuthProvider({children}:{children: React.ReactNode}){
             session,
             userId,
             isLoading,
+            handleExpiredToken,
         }}
         >
             {children}

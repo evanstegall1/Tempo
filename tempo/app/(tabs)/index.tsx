@@ -4,12 +4,13 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Link } from 'expo-router';
 import {usePlaylists, playlist} from '@/context/playlistsContext'
+import {useAuth} from '@/context/AuthContext';
 
 const openSpotifyPlaylist=(spotifyId:string)=>{
   if(!spotifyId){
     console.warn("Spotify ID is missing for this playlist");
   }
-  const url =`https://open.spotify.com/playlist/${spotifyId}`;
+  const url =`http://open.spotify.com/playlist/${spotifyId}`;
   Linking.openURL(url).catch((err)=>{
     console.error( "Failed to open Spoptify link:", err);
   });
@@ -54,9 +55,15 @@ const PlaylistItem: React.FC<{playlist: playlist}>=({playlist})=>(
 );
 export default function HomeScreen() {
   const {playlists}=usePlaylists();
+  const { signOut } = useAuth();
   return (
     <ScrollView style ={styles.container}>
       <ThemedView style={styles.headerImageContainer}>
+        <ThemedView style={styles.signOutButtonContainer}>
+            <TouchableOpacity onPress={signOut} style={styles.signOutButton}>
+                <ThemedText style={styles.signOutButtonText}>Sign Out </ThemedText>
+            </TouchableOpacity>
+        </ThemedView>
         <Image
         source={require('@/assets/images/equalizer.png')}
         style={styles.equalizer}
@@ -96,6 +103,30 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  signOutButtonContainer: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 60 : 20, 
+        right: 20,
+        zIndex: 10, 
+        backgroundColor: 'transparent',
+    },
+    signOutButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 16,
+        
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    signOutButtonText: {
+        color: '#FF6347', 
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
   container: {
     flex: 1,
     backgroundColor: '#0B0B0D',

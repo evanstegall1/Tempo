@@ -1,6 +1,7 @@
 //structure of data sent to endpoint
 export interface BuildPlaylistRequest{
     user_id:string;
+    access_token: string;
     name: string;
     queries: string[];
     min_bpm: number;

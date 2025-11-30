@@ -76,8 +76,8 @@ const TestInputExample = ()=>{
   const [selectedMaxBPM, setSelectedMaxBPM]=React.useState('200');
   const [isLoading, setIsLoading]=React.useState(false);
 
-  const auth = useAuth();
-  const USER_ID= auth.userId;
+  const { userId: USER_ID, session: ACCESS_TOKEN, handleExpiredToken } = useAuth();
+  
 
   const [artistInput, setArtistInput] = React.useState('');
   const [selectedQueries, setSelectedQueries]= React.useState<string[]>([]);
@@ -94,7 +94,7 @@ const TestInputExample = ()=>{
   };
 
   const handleCreatePlaylist = async ()=>{
-    if (!USER_ID) {
+    if (!USER_ID||!ACCESS_TOKEN) {
       Alert.alert("Authentication Required", "Please ensure you are logged in to build a playlist.");
       return;
     }
@@ -146,8 +146,7 @@ const TestInputExample = ()=>{
 
   
 
-  const requestBody: BuildPlaylistRequest={
-    user_id: USER_ID,
+  const requestBodyForAPI={
     name:name.trim()||'BPM Playlist',
     queries:queries, //examples for now
     min_bpm:minBPM,
@@ -155,13 +154,25 @@ const TestInputExample = ()=>{
     description: description.trim() || `BPM: ${minBPM}-${maxBPM}.`,
     public: isPublic,
   };
+
+  const requestBodyForTracking: BuildPlaylistRequest={
+    user_id: USER_ID,
+    access_token: ACCESS_TOKEN,
+    ...requestBodyForAPI
+  };
+
   setIsLoading(true);
 
   try{
-    const summary = await callBuildPlaylist(requestBody);
+    const summary = await callBuildPlaylist(
+      requestBodyForAPI,
+      ACCESS_TOKEN,
+      USER_ID,
+      handleExpiredToken
+    );
 
     addPlaylist(
-      requestBody.name, 
+      requestBodyForTracking.name, 
       summary.min_bpm.toString(), 
       summary.max_bpm.toString(),
       description,
@@ -177,10 +188,12 @@ const TestInputExample = ()=>{
     router.back();
   }catch(error){
     console.error("API Call Failed:", error);
-    Alert.alert(
-      'Build failed',
-      `Could not build spotify playlist. is flask server running? Error: ${(error as Error).message}`
-    );
+    if (!(error as Error).message.includes('Authentication Expired!')) {
+      Alert.alert(
+        'Build failed',
+        `Could not build spotify playlist. Error: ${(error as Error).message}`
+      );
+    }
   }finally {
     setIsLoading(false);
   }

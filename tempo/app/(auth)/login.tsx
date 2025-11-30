@@ -39,7 +39,10 @@ export default function LoginScreen() {
       
       const result = await WebBrowser.openAuthSessionAsync(
         finalAuthUrl,
-        REDIRECT_URI
+        REDIRECT_URI,
+        { 
+           preferEphemeralSession: true 
+        }
       );
 
       if (result.type === "success") {
