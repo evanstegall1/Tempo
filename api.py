@@ -22,7 +22,7 @@ SCOPES = "playlist-modify-public playlist-modify-private user-read-private user-
 client_secret_value = os.getenv("CLIENT_SECRET")
 log_path = "/home/practiceusernameforjosh/Tempo/oauth_error.log"
 with open(log_path, "a") as f:
-    f.write(f" DEBUG: CLIENT SECRET LOADED (DELETE THIS CODE AFTER USE): {client_secret_value}\n")
+    f.write(f" debug {client_secret_value}\n")
 app = Flask(__name__)
 CORS(app)
 
@@ -47,11 +47,10 @@ def pause_playback():
 
     sp = get_sp_from_token(access_token)
     try:
-        # Pause playback on the user's active device
         sp.pause_playback()
         return jsonify({"status": "paused"}), 200
     except SpotifyException as e:
-        # Catch 401/403 errors due to permission/token issues
+
         return jsonify({"error": f"Spotify API Error: {e.msg}", "status_code": e.http_status}), e.http_status
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -65,7 +64,7 @@ def skip_next():
 
     sp = get_sp_from_token(access_token)
     try:
-        # Skip to the next track
+
         sp.next_track()
         return jsonify({"status": "skipped_next"}), 200
     except SpotifyException as e:
@@ -83,7 +82,7 @@ def skip_previous():
 
     sp = get_sp_from_token(access_token)
     try:
-        # Skip to the previous track
+
         sp.previous_track()
         return jsonify({"status": "skipped_previous"}), 200
     except SpotifyException as e:
@@ -111,7 +110,6 @@ def spotify_callback():
     original_state = request.args.get('state')
 
     if not original_state:
-        # Handle error: state parameter missing
         return "Error: Missing original state", 400
 
     CLIENT_FINAL_REDIRECT_URI = original_state
@@ -188,9 +186,8 @@ def build_playlist():
         public=public,
         access_token=access_token
     )
-    playlist_id = summary.get("playlist_id") # Assuming build_bpm_playlist returns 'playlist_id'
-
-    # New optional playback logic
+    playlist_id = summary.get("playlist_id")
+    
     play = bool(data.get("play", False))
     playback_started = False
     playback_error = None
@@ -198,17 +195,16 @@ def build_playlist():
     if play and playlist_id:
         sp = get_sp_from_token(access_token)
         try:
-            # Requires 'user-modify-playback-state' scope
+
             sp.start_playback(
                 device_id=data.get("device_id"),
                 context_uri=f"spotify:playlist:{playlist_id}",
             )
             playback_started = True
         except Exception as e:
-            # Handle potential Spotify API errors (e.g., no active device)
             playback_error = str(e)
 
-    # Return structure is slightly different now (nested summary)
+
     return jsonify(
         {
             "summary": summary,
@@ -218,8 +214,6 @@ def build_playlist():
         }
     )
 
-
-# --- NEW PACE PLAYLIST ROUTE ---
 @app.route("/api/pace-playlist", methods=["POST"])
 def pace_playlist():
     """Build a playlist from the runner's pace (steps per minute)."""
@@ -229,7 +223,7 @@ def pace_playlist():
     if not access_token:
         return jsonify({"error": "access_token is required"}), 400
 
-    # Data validation and defaults
+
     try:
         pace_spm = float(data["pace_spm"])
     except (TypeError, ValueError):
@@ -241,7 +235,6 @@ def pace_playlist():
     mode = data.get("mode", "single")
     band_width = float(data.get("band_width", 10))
 
-    # Build the playlist using the new main.py function
     summary = build_pace_playlist(
         user_id=user_id,
         name=name,
@@ -250,12 +243,11 @@ def pace_playlist():
         mode=mode,
         band_width=band_width,
         access_token=access_token,
-        # ... and all other optional arguments passed through ...
+
     )
 
     playlist_id = summary.get("playlist_id")
 
-    # Playback logic (defaults to True if not specified)
     play = data.get("play", True)
     play = bool(play)
 
@@ -284,7 +276,6 @@ def pace_playlist():
     )
 
 
-# --- NEW LIVE PACE RUN ROUTE (Similar to pace-playlist but specialized) ---
 @app.route("/api/live-pace-run", methods=["POST"])
 def live_pace_run():
     """Start a live pace-based run and immediately start playback."""
@@ -294,7 +285,6 @@ def live_pace_run():
     if not access_token:
         return jsonify({"error": "access_token is required"}), 400
 
-    # Validation and defaults for live run
     try:
         pace_spm = float(data["pace_spm"])
     except (TypeError, ValueError):
@@ -305,8 +295,7 @@ def live_pace_run():
     name = data.get("name", "Live Pace Run")
     user_id = data.get("user_id", "me")
 
-    # Build the pace-matched playlist
-    # The new code uses hardcoded/defaulted band_width=12 and mode="single" here.
+
     summary = build_pace_playlist(
         user_id=user_id,
         name=name,
