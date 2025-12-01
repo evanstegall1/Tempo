@@ -10,7 +10,7 @@ export interface BuildPlaylistRequest{
     public?: boolean;
 }
 //structure of data recieved from endpoint
-export interface BuildPlaylistResponse{
+export interface PlaylistSummary{
     playlist_id: string;
     added_count: number;
     min_bpm:number;
@@ -24,4 +24,32 @@ export interface BuildPlaylistResponse{
         bpm_out_of_range_before_nprm: number;
         kept: number;
     };
+    playlist_url: string;
+}
+export interface BuildPlaylistResponse {
+    playlist_id: string; // Duplicated top-level ID
+    summary: PlaylistSummary; // Nested summary object
+    playback_started: boolean;
+    playback_error: string | null;
+}
+
+export interface LivePaceRunRequest {
+    pace_spm: number; 
+    queries?: string[];
+    name: string;
+    description?: string;
+    public?: boolean;
+    access_token: string;
+    user_id: string;
+    device_id: string;
+}
+
+export interface LivePaceRunResponse {
+    playlist_id: string;
+    playlist_url: string;
+    added_count: number;
+    pace_spm: number;
+    started: boolean; 
+    error?: string; 
+    playback_error?: string; 
 }

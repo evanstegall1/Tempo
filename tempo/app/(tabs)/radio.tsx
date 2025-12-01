@@ -4,21 +4,28 @@ import {
   Platform,
   TextInput,
   StyleSheet,
+  Alert,
+  ActivityIndicator,
   Switch,
 } from "react-native";
+import { callPausePlayback, callSkipPrevious, callSkipNext } from '../../api/callPlaybackControls';
+import { getActiveDeviceId } from '@/api/getSpotifyDeviceId';
 import Slider from "@react-native-community/slider";
 import { Pedometer } from "expo-sensors";
-import {StatusBar} from "expo-status-bar";
+import { StatusBar } from "expo-status-bar";
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { callLivePaceRun } from '@/api/callLivePaceRun';
+import { useAuth } from '@/context/AuthContext';
 
 export default function RealTimeRadioScreen() {
+  const { userId, session, handleExpiredToken } = useAuth();
   const [pedometerOn, setPedometerOn] = useState<boolean>(true);
   const [isAvailable, setIsAvailable] = useState<boolean>(false);
   const [stepsPerMin, setStepsPerMin] = useState<number>(0);
   const [bpm, setBpm] = useState<number>(120);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   // check if pedometer is available
   useEffect(() => {
     Pedometer.isAvailableAsync().then((result) => {
@@ -58,9 +65,81 @@ export default function RealTimeRadioScreen() {
     }
   }, [pedometerOn, stepsPerMin]);
 
+  const handlePlayPause = async () => {
+    if (!session || !userId) {
+      Alert.alert("Authentication Required", "Please log in to start a live run.");
+      return;
+    }
+
+    if (isPlaying) {
+      setIsLoading(true);
+      try {
+        await callPausePlayback(session); 
+        setIsPlaying(false);
+        console.log("Pausing playback via API.");
+      } catch (error) {
+        Alert.alert("Pause Error", "Could not pause playback.");
+        console.error("Pause API Call Failed:", error);
+      } finally {
+        setIsLoading(false);
+      }
+      return; // Exit after pausing
+    }
+
+
+    const paceToUse = Math.round(bpm);
+
+    setIsLoading(true);
+
+    try {
+      const deviceId = await getActiveDeviceId(session);
+
+      if (!deviceId) {
+        Alert.alert(
+          "No Spotify Device Found",
+          "Please open the Spotify app on a device and start playing music, then try again."
+        );
+        setIsLoading(false);
+        return;
+      }
+      const response = await callLivePaceRun({
+        access_token: session,
+        user_id: userId,
+        pace_spm: paceToUse,
+        name: `Live Run @ ${paceToUse} BPM`,
+        queries: [],
+        device_id: deviceId,
+
+      });
+
+      if (response && response.started) {
+        Alert.alert(
+          "Live Run Started! 🏃‍♀️",
+          `Playing pace-matched music for ${paceToUse} BPM. Playlist ID: ${response.playlist_id}`
+        );
+        setIsPlaying(true);
+      } else if (response && response.error) {
+        Alert.alert("Playback Error", `Could not start music: ${response.error}.`);
+      } else {
+        Alert.alert("Error", "Playlist built, but playback failed or response was incomplete.");
+      }
+
+    } catch (error) {
+      console.error("Live Pace Run API Call Failed:", error);
+      if (!(error instanceof Error && error.message.includes('Authentication Expired!'))) {
+        Alert.alert(
+          'API Call Failed',
+          `Could not start live run: ${(error instanceof Error) ? error.message : "Unknown error."}`
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <ThemedView style={styles.container}>
-      <StatusBar style="light"/>
+      <StatusBar style="light" />
 
       {/* Header */}
       <ThemedView style={styles.header}>
@@ -129,41 +208,48 @@ export default function RealTimeRadioScreen() {
 
       {/* Music Controls */}
       <ThemedView style={styles.controlsContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.controlButton, styles.smallControl]}
-          onPress={() => {
-            // TODO API call for skip back
-            console.log("Skip back");
+          onPress={async () => {
+            try {
+              await callSkipPrevious(session!);
+            } catch (error) {
+              Alert.alert("Skip Error", "Could not skip to previous track.");
+            }
           }}
         >
           <ThemedText type="defaultSemiBold" style={styles.controlButtonText}>⏮</ThemedText>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.controlButton, styles.playControl]} 
-          onPress={() => {
-            // TODO API call for pause/play
-            setIsPlaying(!isPlaying);
-            console.log(isPlaying ? "Pausing" : "Playing");
-          }}
+        <TouchableOpacity
+          style={[styles.controlButton, styles.playControl]}
+          onPress={handlePlayPause}
+          disabled={isLoading}
         >
-          <ThemedText type="defaultSemiBold" style={[styles.controlButtonText, styles.playControlText]}>
-            {isPlaying ? "⏸" : "▶"}
-          </ThemedText>
+          {isLoading ? ( // <-- Conditional rendering for loading state
+            <ActivityIndicator size="small" color="#1DB954" />
+          ) : (
+            <ThemedText type="defaultSemiBold" style={[styles.controlButtonText, styles.playControlText]}>
+              {isPlaying ? "⏸" : "▶"}
+            </ThemedText>
+          )}
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.controlButton, styles.smallControl]} 
-          onPress={() => {
-            // TODO: API call for skip forward
-            console.log("Skip forward");
+        <TouchableOpacity
+          style={[styles.controlButton, styles.smallControl]}
+          onPress={async () => {
+            try {
+              await callSkipNext(session!);
+            } catch (error) {
+              Alert.alert("Skip Error", "Could not skip to next track.");
+            }
           }}
         >
           <ThemedText type="defaultSemiBold" style={styles.controlButtonText}>⏭</ThemedText>
         </TouchableOpacity>
       </ThemedView>
 
-      </ThemedView>
+    </ThemedView>
 
 
   );
@@ -175,9 +261,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 24,
   },
-  header:{
-    alignItems:"center", 
-    marginTop:40,
+  header: {
+    alignItems: "center",
+    marginTop: 40,
   },
   title: {
     fontSize: 24,

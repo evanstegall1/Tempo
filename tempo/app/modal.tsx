@@ -6,7 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import {Picker} from '@react-native-picker/picker'
 import {usePlaylists} from '@/context/playlistsContext'
 import {callBuildPlaylist} from '../api/spotify';
-import {BuildPlaylistRequest} from '../api/types'
+import {BuildPlaylistRequest, BuildPlaylistResponse} from '../api/types'
 
 import { useAuth } from '@/context/AuthContext';
 
@@ -146,7 +146,7 @@ const TestInputExample = ()=>{
 
   
 
-  const requestBodyForAPI={
+  const requestBodyForAPI: Omit<BuildPlaylistRequest, 'access_token'| 'user_id'>={
     name:name.trim()||'BPM Playlist',
     queries:queries, //examples for now
     min_bpm:minBPM,
@@ -155,45 +155,46 @@ const TestInputExample = ()=>{
     public: isPublic,
   };
 
-  const requestBodyForTracking: BuildPlaylistRequest={
-    user_id: USER_ID,
-    access_token: ACCESS_TOKEN,
-    ...requestBodyForAPI
-  };
-
   setIsLoading(true);
 
   try{
-    const summary = await callBuildPlaylist(
+    const responseData: BuildPlaylistResponse = await callBuildPlaylist(
       requestBodyForAPI,
       ACCESS_TOKEN,
       USER_ID,
       handleExpiredToken
     );
 
+    const summary = responseData.summary;
+    const playlistId=responseData.playlist_id;
+
+    if (summary.min_bpm === undefined || summary.max_bpm === undefined || !playlistId) {
+         throw new Error("API returned incomplete or missing BPM data or playlist ID.");
+    }
+
     addPlaylist(
-      requestBodyForTracking.name, 
+      requestBodyForAPI.name, 
       summary.min_bpm.toString(), 
       summary.max_bpm.toString(),
-      description,
+      requestBodyForAPI.description!,
       artistInput,
       isPublic,
       selectedQueries,
-      summary.playlist_id);
+      playlistId);
 
     Alert.alert(
       'Playlist Built!', 
-      `"${summary.queries.join(',')}" tracks filtered. Added ${summary.added_count} tracks to playlist ID: ${summary.playlist_id}.`
+      `"Added ${summary.added_count} tracks to playlist ID: ${playlistId}.`
     );
 
     router.back();
   }catch(error){
     console.error("API Call Failed:", error);
-    if (!(error as Error).message.includes('Authentication Expired!')) {
-      Alert.alert(
-        'Build failed',
-        `Could not build spotify playlist. Error: ${(error as Error).message}`
-      );
+    if (!(error instanceof Error && error.message.includes('Authentication Expired!'))) {
+    Alert.alert(
+        'Build Failed',
+        `Could not build Spotify playlist. Error: ${(error instanceof Error) ? error.message : "Unknown error."}`
+    );
     }
   }finally {
     setIsLoading(false);

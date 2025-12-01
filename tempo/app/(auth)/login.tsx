@@ -20,6 +20,14 @@ const REDIRECT_URI = AuthSession.makeRedirectUri({
   scheme: 'tempo',
   path: 'redirect',
 });
+const SPOTIFY_SCOPES = [
+    "playlist-modify-public",
+    "playlist-modify-private",
+    "user-read-private",
+    "user-read-playback-state", 
+    "user-modify-playback-state", 
+    "streaming" 
+].join(" ");
 
 
 
@@ -35,7 +43,7 @@ export default function LoginScreen() {
 
      
 
-      const finalAuthUrl = `${BACKEND_AUTH_URL}?client_redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+      const finalAuthUrl = `${BACKEND_AUTH_URL}?client_redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SPOTIFY_SCOPES)}`;
       
       const result = await WebBrowser.openAuthSessionAsync(
         finalAuthUrl,
