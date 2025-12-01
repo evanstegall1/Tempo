@@ -1,10 +1,10 @@
 
 # Tempo
 # Members
-Myles Guidry
-Bella Frederick
-Johnathan Bordenave
-Joshua Harris
+Myles Guidry,
+Bella Frederick,
+Johnathan Bordenave,
+Joshua Harris,
 Evan Stegall
 
 # About Our Software
