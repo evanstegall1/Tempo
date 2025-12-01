@@ -25,10 +25,12 @@ git clone https://github.com/evanstegall1/Tempo.git
 
 # How to Run Dev and Test Environment
 
+## Dependencies
+- NodeJS
+- Expo-Cli
 
-### Downloading Dependencies
-# Dependencies used
-"@expo/vector-icons": "^15.0.3",
+```sh
+    "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/slider": "^5.1.1",
     "@react-native-picker/picker": "2.11.1",
@@ -60,6 +62,9 @@ git clone https://github.com/evanstegall1/Tempo.git
     "react-native-screens": "~4.16.0",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1"
+```
+
+### Downloading Dependencies
 
 Verify you have Node.js installed using Terminal
 
