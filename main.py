@@ -7,20 +7,21 @@ from typing import List, Tuple, Dict, Set, Optional
 
 from bpm_lookup import bpm_from_isrc
 
-SCOPES = "playlist-modify-public playlist-modify-private user-read-private"
+SCOPES = "playlist-modify-public playlist-modify-private user-read-private user-read-playback-state user-modify-playback-state streaming"
 
 load_dotenv()
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
 REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI", "http://127.0.0.1:8888/callback")
+#REDIRECT_URI = os.getenv("SPOTIPY_REDIRECT_URI", "https://tempo://redirect")
 CACHE_PATH = "/home/practiceusernameforjosh/Tempo/.cache"
 
 
 def get_sp_from_token(access_token: str) -> spotipy.Spotify:
     return spotipy.Spotify(auth=access_token)
 
-'''
-def get_sp() -> spotipy.Spotify:
+
+def get_sp(cache_path:str) -> spotipy.Spotify:
     return spotipy.Spotify(auth_manager=SpotifyOAuth(
         client_id=client_id,
         client_secret=client_secret,
@@ -28,7 +29,7 @@ def get_sp() -> spotipy.Spotify:
         scope=SCOPES,
 	    cache_path=CACHE_PATH,
     ))
-    '''
+
 
 def get_token():
     auth_string = f"{client_id}:{client_secret}"
@@ -51,6 +52,15 @@ def get_token():
 
 def get_auth_header(token):
     return {"Authorization": f"Bearer {token}"}
+
+def get_user_id(sp: spotipy.Spotify)-> str:
+    """Fetches the current user's ID via the access token."""
+    try:
+        user_profile=sp.current_user()
+        return user_profile["id"]
+    except Exception as e:
+        print(f"Error fetching user profile:{e}")
+        raise e
 
 def search_tracks(sp: spotipy.Spotify, query: str, limit: int = 25) -> List[Dict]:
     """Track search. (genre: is ignored by track search)"""
@@ -93,6 +103,50 @@ def dedupe_tracks(tracks: List[Dict]) -> List[Dict]:
         seen.add(tid)
         out.append(t)
     return out
+
+def collect_candidates(
+    sp: spotipy.Spotify,
+    queries: List[str],
+    *,
+    artists_per_genre: int = 10,
+    tracks_per_artist: int = 3,
+    per_query_track_limit: int = 15,
+    market: str = "US",
+    shuffle: bool = True
+) -> List[Dict]:
+    """Aggregates tracks from various search queries (genre:, artist:, free text)."""
+    pool: List[Dict] = []
+
+    for q in queries:
+        q_stripped = q.strip()
+        if q_stripped.lower().startswith("genre:"):
+            genre = q_stripped.split(":", 1)[1].strip().strip('"')
+            artists = search_artists_by_genre(sp, genre, limit=artists_per_genre * 2)
+            if shuffle:
+                random.shuffle(artists)
+            artists = artists[:artists_per_genre]
+            for a in artists:
+                top = artist_top_tracks(sp, a["id"], market=market)
+                if shuffle:
+                    random.shuffle(top)
+                pool.extend(top[:tracks_per_artist])
+
+        elif q_stripped.lower().startswith("artist:"):
+            name = q_stripped.split(":", 1)[1].strip().strip('"')
+            artists = search_artist_by_name(sp, name, limit=3)
+            for a in artists:
+                top = artist_top_tracks(sp, a["id"], market=market)
+                if shuffle:
+                    random.shuffle(top)
+                pool.extend(top[:tracks_per_artist])
+
+        else:
+            pool.extend(search_tracks(sp, q_stripped, limit=per_query_track_limit))
+
+    pool = dedupe_tracks(pool)
+    if shuffle:
+        random.shuffle(pool)
+    return pool
 
 def filter_by_bpm(
     tracks: List[dict],
@@ -139,14 +193,13 @@ def filter_by_bpm(
     if debug:
         print("[BPM FILTER] Stats:", stats)
     return kept, stats
-
 '''def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str:
     me = sp.current_user()
     actual_id = me["id"] #I had to do this to get the user from  access token because user_id is wrong
     pl = sp.user_playlist_create(user=actual_id, name=name, public=public, description=description)
     return pl["id"]'''
 
-def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str: 
+def create_playlist(sp: spotipy.Spotify, user_id: str, name: str, description: str = "", public: bool = False) -> str:
 	#can change return to Tuple[str, Optional[str]] if we want to return url (see below)
     me = sp.current_user()
     actual_id = me["id"]
@@ -164,57 +217,43 @@ def add_to_playlist(sp: spotipy.Spotify, playlist_id: str, uris: List[str]):
     for i in range(0, len(uris), 100):
         sp.playlist_add_items(playlist_id, uris[i:i+100])
 
-def collect_candidates(
+
+def play_playlist_now(
     sp: spotipy.Spotify,
-    queries: List[str],
+    playlist_id: str,
+    device_id: Optional[str] = None,
+) -> None:
+    """
+    Start playing the given playlist on the user's active device,
+    or on the device_id you pass in. Requires playback scopes.
+    """
+    sp.start_playback(
+        device_id=device_id,
+        context_uri=f"spotify:playlist:{playlist_id}",
+    )
+
+def bpm_band_for_pace(
+    steps_per_minute: float,
     *,
-    artists_per_genre: int = 10,
-    tracks_per_artist: int = 3,
-    per_query_track_limit: int = 15,
-    market: str = "US",
-    shuffle: bool = True
-) -> List[Dict]:
-    pool: List[Dict] = []
+    mode: str = "double",
+    band_width: float = 10,
+) -> Tuple[float, float]:
+    """Calculates min/max BPM based on steps-per-minute (SPM)."""
+    if steps_per_minute <= 0:
+        raise ValueError("steps_per_minute must be positive")
 
-    for q in queries:
-        q_stripped = q.strip()
-        if q_stripped.lower().startswith("genre:"):
-            genre = q_stripped.split(":", 1)[1].strip().strip('"')
-            artists = search_artists_by_genre(sp, genre, limit=artists_per_genre * 2)
-            if shuffle:
-                random.shuffle(artists)
-            artists = artists[:artists_per_genre]
-            for a in artists:
-                top = artist_top_tracks(sp, a["id"], market=market)
-                if shuffle:
-                    random.shuffle(top)
-                pool.extend(top[:tracks_per_artist])
+    # 'single' mode means 1 step = 1 beat; 'double' means 1 step = 2 beats (typical for running)
+    target = steps_per_minute if mode == "single" else steps_per_minute * 2.0
 
-        elif q_stripped.lower().startswith("artist:"):
-            name = q_stripped.split(":", 1)[1].strip().strip('"')
-            artists = search_artist_by_name(sp, name, limit=3)
-            for a in artists:
-                top = artist_top_tracks(sp, a["id"], market=market)
-                if shuffle:
-                    random.shuffle(top)
-                pool.extend(top[:tracks_per_artist])
+    half = band_width / 2.0
+    min_bpm = target - half
+    max_bpm = target + half
 
-        else:
-            pool.extend(search_tracks(sp, q_stripped, limit=per_query_track_limit))
+    # Clip to valid BPM range
+    min_bpm = max(40.0, min_bpm)
+    max_bpm = min(240.0, max_bpm)
 
-    pool = dedupe_tracks(pool)
-    if shuffle:
-        random.shuffle(pool)
-    return pool
-
-#potentially change the way we get user_id to get rid of the account conflict error?
-def get_user_id(sp: spotipy.Spotify)-> str:
-    try:
-        user_profile=sp.current_user()
-        return user_profile["id"]
-    except Exception as e:
-        print(f"Error fetching user profile:{e}")
-        raise e
+    return min_bpm, max_bpm
 
 def build_bpm_playlist(
     user_id: str,
@@ -292,6 +331,7 @@ def build_bpm_playlist(
     if uris:
         add_to_playlist(sp, playlist_id, uris)
 
+
     return {
         "playlist_id": playlist_id,
 		"playlist_url": playlist_url,
@@ -303,107 +343,56 @@ def build_bpm_playlist(
         "bpm_stats": stats
     }
 
-from typing import Tuple
-
-def bpm_band_for_pace(
-    steps_per_minute: float,
-    *,
-    mode: str = "double",   # "single" or "double"
-    band_width: float = 10, # +/- range around the target
-) -> Tuple[float, float]:
-    """
-    Convert running cadence (steps/min) into a BPM band for music.
-
-    mode="single"  => target_bpm ≈ steps_per_minute
-    mode="double"  => target_bpm ≈ 2 * steps_per_minute (common for running)
-
-    band_width = total width of the band, so 10 => target ± 5.
-    """
-    if steps_per_minute <= 0:
-        raise ValueError("steps_per_minute must be positive")
-
-    if mode == "single":
-        target = steps_per_minute
-    elif mode == "double":
-        target = steps_per_minute * 2.0
-    else:
-        raise ValueError(f"Unknown mode: {mode!r}")
-
-    half = band_width / 2.0
-    return max(40.0, target - half), min(240.0, target + half)
-
 def build_pace_playlist(
     user_id: str,
     name: str,
     queries: List[str],
     pace_spm: float,
     *,
-    mode: str = "double",
+    mode: str = "single",
     band_width: float = 10,
     description: str = "",
     public: bool = False,
-    **kwargs,
+    access_token: Optional[str] = None,
+    # Pass-through tunables:
+    artists_per_genre: int = 10,
+    tracks_per_artist: int = 3,
+    per_query_track_limit: int = 15,
+    shuffle: bool = True,
+    max_total_tracks: int = 80,
+    debug: bool = False,
+    fallback_if_empty: bool = True,
+    fallback_threshold: int = 15,
 ) -> dict:
     """
-    Create a playlist whose BPM matches the runner's pace (steps per minute).
-
-    - pace_spm: steps per minute (from pedometer)
-    - mode: "single" (BPM~SPM) or "double" (BPM~2*SPM)
-    - band_width: width of BPM band, e.g. 10 => [target-5, target+5]
-
-    Other keyword args are passed straight through to build_bpm_playlist
-    (artists_per_genre, tracks_per_artist, shuffle, etc.).
+    Builds a playlist by first calculating the BPM range from the running pace (SPM),
+    then delegates to build_bpm_playlist.
     """
     min_bpm, max_bpm = bpm_band_for_pace(
-        pace_spm,
+        steps_per_minute=pace_spm,
         mode=mode,
         band_width=band_width,
     )
 
+    # Delegate all heavy lifting to the existing BPM builder
     return build_bpm_playlist(
         user_id=user_id,
         name=name,
         queries=queries,
         min_bpm=min_bpm,
         max_bpm=max_bpm,
-        description=description,
+        description=description or f"Pace run at ~{pace_spm:.1f} spm",
         public=public,
-        **kwargs,
+        access_token=access_token,
+        artists_per_genre=artists_per_genre,
+        tracks_per_artist=tracks_per_artist,
+        per_query_track_limit=per_query_track_limit,
+        shuffle=shuffle,
+        max_total_tracks=max_total_tracks,
+        debug=debug,
+        fallback_if_empty=fallback_if_empty,
+        fallback_threshold=fallback_threshold,
     )
-
-
-# NEW MAIN for pedometer
-
-if __name__ == "__main__":
-    # Example: user cadence = 170 steps/min, songs ≈ 170 BPM (band 165–175)
-    summary = build_pace_playlist(
-        user_id="me",
-        name="Pace-matched run",
-        queries=[
-            "genre:rock",
-            "genre:electronic",
-            "running",
-            "artist:Foo Fighters",
-            "artist:Calvin Harris",
-        ],
-        pace_spm=170,
-        mode="single",      # or "double" if pace_spm is per-leg vs total steps
-        band_width=10,
-        description="Auto-generated from my running pace.",
-        artists_per_genre=12,
-        tracks_per_artist=2,
-        per_query_track_limit=12,
-        shuffle=True,
-        max_total_tracks=80,
-        debug=True,
-        fallback_if_empty=True,
-        fallback_threshold=15,
-    )
-    print(summary)
-
-'''
-
-OLD MAIN
 
 if __name__ == "__main__":
     summary = build_bpm_playlist(
@@ -418,18 +407,10 @@ if __name__ == "__main__":
             "artist:Foo Fighters",
             "artist:Calvin Harris",
         ],
-        min_bpm=115,
-        max_bpm=135,
-        description="...like there's lions, and tigers, and bears!",
-        artists_per_genre=12,
-        tracks_per_artist=2,
-        per_query_track_limit=12,
-        shuffle=True,
-        max_total_tracks=80,
+        pace_spm=170,
+        mode="single",
+        band_width=10,
+        description="Auto-generated from my running pace.",
         debug=True,
-        fallback_if_empty=True,
-        fallback_threshold=15
     )
     print(summary)
-
-'''
